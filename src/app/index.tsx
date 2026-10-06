@@ -16,7 +16,7 @@ function getDevMenuHint() {
   if (Device.isDevice) {
     return (
       <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
+        shake device or  <ThemedText type="code">m</ThemedText> in terminal
       </ThemedText>
     );
   }
