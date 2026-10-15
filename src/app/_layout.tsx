@@ -4,7 +4,6 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
 import { ActivityIndicator, useColorScheme, View } from 'react-native'
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon'
 import AppTabs from '@/components/app-tabs'
 import { AuthProvider, useAuth } from '@/features/auth/AuthProvider'
 import AuthScreen from '@/features/auth/AuthScreen'
@@ -28,7 +27,6 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <AuthProvider>
-        <AnimatedSplashOverlay />
         <Gate />
       </AuthProvider>
     </ThemeProvider>

@@ -1,7 +1,7 @@
 import { getToken, notifyUnauthorized } from "@/services/session";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "";
-const TIMEOUT_MS = 10000;
+const TIMEOUT_MS = 25000;
 
 export class ApiError extends Error {
   constructor(public status: number, public code: string, message: string) {
@@ -14,7 +14,7 @@ interface ErrorBody {
 }
 
 interface ApiOptions {
-  method?: "GET" | "POST" | "PUT";
+  method?: "GET" | "POST" | "PUT" | "DELETE";
   body?: object;
   /** Ignored. Auth now comes from the saved token. Kept so older callers still compile. */
   actorId?: string;

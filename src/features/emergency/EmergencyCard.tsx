@@ -1,8 +1,8 @@
-import { Pressable, ScrollView, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Linking, Pressable, ScrollView, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-import type { EmergencyProfileData } from "./types";
-import EmergencyQr from "./EmergencyQr";
+import type { EmergencyProfileData } from './types';
+import EmergencyQr from './EmergencyQr';
 
 const RANK: Record<string, number> = {
   UNVERIFIED: 0,
@@ -11,157 +11,125 @@ const RANK: Record<string, number> = {
   CLINICALLY_VERIFIED: 3,
 };
 
-const BANNER: Record<string, { title: string; body: string; box: string; text: string }> = {
-  UNVERIFIED: {
-    title: "Not verified",
-    body: "Nobody has confirmed this yet.",
-    box: "bg-gray-100 dark:bg-gray-900",
-    text: "text-gray-800 dark:text-gray-200",
-  },
-  SELF_REPORTED: {
-    title: "Self-reported",
-    body: "You entered this. No health worker has checked it yet.",
-    box: "bg-amber-100 dark:bg-amber-950",
-    text: "text-amber-900 dark:text-amber-200",
-  },
-  EVIDENCE_BACKED: {
-    title: "Evidence-backed",
-    body: "A health worker saw supporting evidence for this profile.",
-    box: "bg-sky-100 dark:bg-sky-950",
-    text: "text-sky-900 dark:text-sky-200",
-  },
-  CLINICALLY_VERIFIED: {
-    title: "Clinically verified",
-    body: "A credentialed health worker reviewed this profile.",
-    box: "bg-emerald-100 dark:bg-emerald-950",
-    text: "text-emerald-900 dark:text-emerald-200",
-  },
+const STATUS_LABEL: Record<string, string> = {
+  UNVERIFIED: 'Not verified',
+  SELF_REPORTED: 'Self-reported',
+  EVIDENCE_BACKED: 'Evidence-backed',
+  CLINICALLY_VERIFIED: 'Clinically verified',
 };
 
-const STEPS: { min: number; label: string }[] = [
-  { min: 1, label: "Entered by you" },
-  { min: 2, label: "Backed by evidence" },
-  { min: 3, label: "Reviewed by a clinician" },
-];
+const STEPS = ['Entered by you', 'Backed by evidence', 'Reviewed by a clinician'] as const;
 
-function Row({ label, items }: { label: string; items: string[] }) {
+function Entry({ kind, value, danger = false }: { kind: string; value: string; danger?: boolean }) {
   return (
-    <View className="gap-1 border-t border-gray-200 pt-3 dark:border-gray-800">
-      <Text className="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400">{label}</Text>
-      {items.length === 0 ? (
-        <Text className="text-base text-gray-400 dark:text-gray-500">None added</Text>
-      ) : (
-        items.map((item) => (
-          <Text key={item} className="text-base text-gray-900 dark:text-white">
-            {item}
-          </Text>
-        ))
-      )}
+    <View className={`flex-row items-center gap-3 rounded-xl p-3 ${danger ? 'bg-danger-soft' : 'bg-fill'}`}>
+      <View className="h-[34px] w-[34px] items-center justify-center rounded-[9px] bg-surface">
+        <Text className={`text-base font-semibold ${danger ? 'text-danger' : 'text-ink'}`}>
+          {danger ? '!' : '•'}
+        </Text>
+      </View>
+      <View className="flex-1 gap-0.5">
+        <Text
+          className={`text-[11px] font-semibold uppercase tracking-wider ${danger ? 'text-danger' : 'text-muted'}`}>
+          {kind}
+        </Text>
+        <Text className="text-base font-semibold text-ink">{value}</Text>
+      </View>
     </View>
   );
 }
 
 export default function EmergencyCard({ profile, onEdit }: { profile: EmergencyProfileData; onEdit: () => void }) {
   const status = profile.verificationStatus;
-  const banner = BANNER[status] ?? BANNER.UNVERIFIED;
   const rank = RANK[status] ?? 0;
 
-  const reviewer =
-    profile.verifiedByName && profile.verifiedAt
-      ? `${profile.verifiedByName}${profile.verifiedByFacility ? `, ${profile.verifiedByFacility}` : ""} on ${new Date(profile.verifiedAt).toLocaleDateString()}`
-      : null;
+  const entries = [
+    ...profile.criticalAllergies.map((value) => ({ kind: 'Severe allergy', value, danger: true })),
+    ...profile.criticalConditions.map((value) => ({ kind: 'Condition', value, danger: false })),
+    ...profile.criticalMedications.map((value) => ({ kind: 'Medication', value, danger: false })),
+    ...profile.implantedDevices.map((value) => ({ kind: 'Implanted device', value, danger: false })),
+    ...profile.importantWarnings.map((value) => ({ kind: 'Warning', value, danger: true })),
+  ];
 
-  const isEmpty =
-    profile.criticalAllergies.length +
-      profile.criticalConditions.length +
-      profile.criticalMedications.length +
-      profile.implantedDevices.length +
-      profile.importantWarnings.length ===
-      0 &&
-    !profile.bloodGroup &&
-    !profile.emergencyContact;
+  const contact = profile.emergencyContact;
 
   return (
-    <SafeAreaView className="flex-1 bg-white dark:bg-black">
-      <ScrollView contentContainerStyle={{ padding: 24, gap: 14 }}>
-        <Text className="text-3xl font-bold text-gray-900 dark:text-white">Emergency profile</Text>
-
-        <View className={`gap-1 rounded-2xl p-4 ${banner.box}`}>
-          <Text className={`text-base font-semibold ${banner.text}`}>{banner.title}</Text>
-          <Text className={`text-sm ${banner.text}`}>{banner.body}</Text>
-          {reviewer ? <Text className={`text-sm ${banner.text}`}>Reviewed by {reviewer}</Text> : null}
+    <SafeAreaView className="flex-1 bg-ink">
+      <ScrollView contentContainerStyle={{ padding: 20, gap: 12, paddingBottom: 40 }}>
+        <View className="flex-row items-center justify-between">
+          <Text className="text-base font-semibold text-white">Emergency card</Text>
+          <Pressable onPress={onEdit} className="h-10 justify-center rounded-[10px] bg-white/10 px-3">
+            <Text className="text-[13px] font-medium text-white">Edit</Text>
+          </Pressable>
         </View>
 
-        <View className="gap-2 rounded-2xl border border-gray-200 p-4 dark:border-gray-800">
-          <Text className="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400">
-            Verification
-          </Text>
-          {STEPS.map((s) => {
-            const done = rank >= s.min;
-            return (
-              <View key={s.label} className="flex-row items-center gap-2">
-                <View className={`h-5 w-5 items-center justify-center rounded-full ${done ? "bg-[#0F6E56]" : "bg-gray-200 dark:bg-gray-800"}`}>
-                  <Text className={`text-xs font-bold ${done ? "text-white" : "text-gray-500"}`}>{done ? "✓" : "–"}</Text>
-                </View>
-                <Text className={`text-sm ${done ? "text-gray-900 dark:text-white" : "text-gray-400 dark:text-gray-500"}`}>
-                  {s.label}
-                </Text>
+        <View className="gap-3 rounded-[18px] bg-surface p-4">
+          <View className="flex-row items-start justify-between">
+            <View className="flex-1 gap-0.5">
+              <Text className="text-[22px] font-semibold tracking-tight text-ink">Your emergency card</Text>
+              <Text className="text-sm text-muted">{STATUS_LABEL[status] ?? 'Not verified'}</Text>
+            </View>
+            <View className="items-center rounded-[10px] border border-line px-3 py-1.5">
+              <Text className="text-[11px] text-muted">Blood</Text>
+              <Text className="text-[22px] font-semibold text-ink">{profile.bloodGroup ?? '—'}</Text>
+            </View>
+          </View>
+
+          <View className="flex-row gap-1.5 border-t border-dashed border-line pt-3">
+            {STEPS.map((label, index) => (
+              <View key={label} className="flex-1 gap-1">
+                <View className={`h-1 rounded-sm ${rank > index ? 'bg-primary' : 'bg-line'}`} />
+                <Text className={`text-[10px] ${rank > index ? 'text-ink' : 'text-muted'}`}>{label}</Text>
               </View>
-            );
-          })}
-          <Text className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            Verification applies to the whole profile, not to each line.
-          </Text>
-        </View>
-
-        {isEmpty ? (
-          <View className="rounded-2xl border border-dashed border-gray-300 p-4 dark:border-gray-700">
-            <Text className="text-base text-gray-700 dark:text-gray-300">
-              Nothing added yet. A responder who opens your profile would see nothing useful. Tap Edit to add your
-              allergies, conditions, medications and a contact.
-            </Text>
+            ))}
           </View>
-        ) : null}
 
-        <View className="gap-3 rounded-2xl border border-gray-200 p-4 dark:border-gray-800">
-          <View className="gap-1">
-            <Text className="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400">Blood group</Text>
-            <Text className="text-4xl font-bold text-gray-900 dark:text-white">{profile.bloodGroup ?? "Not set"}</Text>
+          <View className="items-center gap-2 border-t border-dashed border-line pt-3">
+            <EmergencyQr />
           </View>
-          <Row label="Allergies" items={profile.criticalAllergies} />
-          <Row label="Conditions" items={profile.criticalConditions} />
-          <Row label="Medications" items={profile.criticalMedications} />
-          <Row label="Implanted devices" items={profile.implantedDevices} />
-          <Row label="Warnings" items={profile.importantWarnings} />
-          <View className="gap-1 border-t border-gray-200 pt-3 dark:border-gray-800">
-            <Text className="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400">
-              Emergency contact
-            </Text>
-            {profile.emergencyContact ? (
-              <Text className="text-base text-gray-900 dark:text-white">
-                {profile.emergencyContact.name} ({profile.emergencyContact.relationship}){"\n"}
-                {profile.emergencyContact.phone}
+
+          {entries.length === 0 ? (
+            <View className="rounded-xl border border-dashed border-line p-4">
+              <Text className="text-[15px] leading-6 text-muted">
+                Nothing added yet. A responder who scans this would see nothing useful. Tap Edit to add your allergies,
+                conditions, medicines and a contact.
               </Text>
-            ) : (
-              <Text className="text-base text-gray-400 dark:text-gray-500">None added</Text>
-            )}
-          </View>
+            </View>
+          ) : (
+            <View className="gap-2">
+              {entries.map((entry) => (
+                <Entry key={`${entry.kind}-${entry.value}`} kind={entry.kind} value={entry.value} danger={entry.danger} />
+              ))}
+            </View>
+          )}
         </View>
+
+        <View className="flex-row items-center gap-3 rounded-xl bg-white/10 px-3.5 py-3">
+          <View className="flex-1 gap-0.5">
+            <Text className="text-[11px] font-medium uppercase tracking-wider text-white/60">Emergency contact</Text>
+            <Text className="text-base font-medium text-white">
+              {contact ? `${contact.name} · ${contact.relationship}` : 'None added'}
+            </Text>
+          </View>
+          {contact ? (
+            <Pressable
+              onPress={() => void Linking.openURL(`tel:${contact.phone}`)}
+              className="h-11 flex-row items-center rounded-xl bg-danger px-3.5">
+              <Text className="text-sm font-medium text-white">Call</Text>
+            </Pressable>
+          ) : null}
+        </View>
+
+        <Text className="px-1 text-xs leading-[17px] text-white/70">
+          Scanning shows only this card. The full record still needs your approval, and every access is logged. Saving
+          an edit resets the status to self-reported.
+        </Text>
 
         {profile.lastConfirmedAt ? (
-          <Text className="text-xs text-gray-500 dark:text-gray-400">
+          <Text className="px-1 text-xs text-white/50">
             Last updated {new Date(profile.lastConfirmedAt).toLocaleDateString()}
           </Text>
         ) : null}
-
-        <EmergencyQr />
-        <Pressable onPress={onEdit} className="items-center rounded-xl bg-[#0F6E56] py-4">
-          <Text className="text-base font-semibold text-white">Edit</Text>
-        </Pressable>
-        <Text className="text-xs text-gray-500 dark:text-gray-400">
-          A responder can see this without your approval, and each access is logged. Saving an edit resets the status
-          to self-reported.
-        </Text>
       </ScrollView>
     </SafeAreaView>
   );

@@ -26,6 +26,14 @@ const LABEL: Record<string, { title: string; dot: string }> = {
   CLAIM_VERIFIED: { title: "An item was clinically verified", dot: "bg-emerald-600" },
   EMERGENCY_PROFILE_VERIFIED: { title: "Emergency profile verified", dot: "bg-emerald-600" },
   EMERGENCY_ACCESSED: { title: "Emergency profile opened", dot: "bg-red-600" },
+  REFERRAL_CREATED: { title: "You created a referral", dot: "bg-indigo-500" },
+  REFERRAL_VIEWED: { title: "A referral was opened", dot: "bg-sky-500" },
+  REFERRAL_REVOKED: { title: "You cancelled a referral", dot: "bg-gray-500" },
+  ACCESS_REVOKED: { title: "You ended someone's access", dot: "bg-gray-500" },
+  CLAIM_REMOVED: { title: "You removed an item from your record", dot: "bg-gray-500" },
+  ENCOUNTER_RECORDED: { title: "A health worker started a note", dot: "bg-amber-500" },
+  ENCOUNTER_REVIEWED: { title: "A health worker added items to your record", dot: "bg-indigo-500" },
+  ENCOUNTER_DISCARDED: { title: "A health worker discarded a note", dot: "bg-gray-400" },
 };
 
 const pretty = (s: string): string => {
