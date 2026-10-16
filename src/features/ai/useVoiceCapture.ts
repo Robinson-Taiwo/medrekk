@@ -31,6 +31,19 @@ const RECORDING = {
 };
 
 /**
+ * The native module is only present in a build made after it was added, so an older
+ * install resolves it to null. Caught here with a message a tester can act on, rather
+ * than surfacing "Cannot read property 'init' of null" on the screen.
+ */
+function recorder(): typeof AudioRecord {
+  const mod = AudioRecord as typeof AudioRecord | null;
+  if (!mod || typeof mod.init !== 'function') {
+    throw new Error('Voice needs a newer build of MedRekk. Use Type or Photo for now.');
+  }
+  return mod;
+}
+
+/**
  * Native module rejections are not reliably Error instances, and when they are not the
  * reason was being thrown away — which is how a format failure reached a phone as
  * "Could not read the recording." Dig the message out of whatever shape arrived.
@@ -64,8 +77,9 @@ export function useVoiceCapture(): VoiceCapture {
         setError('MedRekk needs permission to use the microphone.');
         return;
       }
-      AudioRecord.init(RECORDING);
-      AudioRecord.start();
+      const mic = recorder();
+      mic.init(RECORDING);
+      mic.start();
       setStage('RECORDING');
     } catch (e) {
       setError(describe(e, 'Could not start recording.'));
@@ -77,7 +91,7 @@ export function useVoiceCapture(): VoiceCapture {
     if (stage !== 'RECORDING') return null;
     setStage('TRANSCRIBING');
     try {
-      const path = await AudioRecord.stop();
+      const path = await recorder().stop();
       if (!path || path.length === 0) throw new Error('The recording was not saved.');
 
       const { text } = await transcribeFile(path);
@@ -94,7 +108,7 @@ export function useVoiceCapture(): VoiceCapture {
   const cancel = useCallback(async () => {
     if (stage === 'RECORDING') {
       try {
-        await AudioRecord.stop();
+        await recorder().stop();
       } catch {
         // Nothing to recover: the recording is being thrown away anyway.
       }
