@@ -1,5 +1,6 @@
 import { initWhisper, type WhisperContext } from 'whisper.rn';
 
+import { encodeBase64, pcmSeconds, wavFromPcm16, type PcmFormat } from './pcmWav';
 import { whisperPath } from './modelStore';
 import { refreshWhisperStatus, useWhisperStatusSnapshot } from './whisperStore';
 
@@ -27,21 +28,34 @@ async function getContext(): Promise<WhisperContext> {
   return context;
 }
 
-/** Turns a recorded file into text. The text then goes through the same seam as a typed note. */
-export async function transcribeFile(uri: string): Promise<Transcription> {
+/**
+ * Turns recorded PCM into text.
+ *
+ * The audio is handed over as a base64 WAV rather than a file. The recorder writes no file
+ * (see pcmWav.ts), and whisper.rn's decoder takes `data:audio/wav;base64,` through exactly
+ * the same C++ path a file path takes — it parses the chunks, requires uncompressed PCM, and
+ * resamples to 16 kHz itself.
+ *
+ * Nothing is written to storage on the way, so a spoken note about somebody's health leaves
+ * no file behind for another app, a backup or a file picker to find.
+ */
+export async function transcribePcm(pcm: Uint8Array, format: PcmFormat): Promise<Transcription> {
   const started = Date.now();
   const ctx = await getContext();
+  const wav = encodeBase64(wavFromPcm16(pcm, format));
 
-  // The recorder hands back a bare absolute path; whisper.rn expects a file URL.
-  const filePath = uri.startsWith('file://') ? uri : `file://${uri}`;
-
-  // The English-only model is told so explicitly: left to detect, it sometimes decides a Nigerian
-  // accent is another language and translates rather than transcribing.
-  const { promise } = ctx.transcribe(filePath, { language: 'en', maxThreads: 4 });
+  // The English-only model is told so explicitly: left to detect, it sometimes decides a
+  // Nigerian accent is another language and translates rather than transcribing.
+  const { promise } = ctx.transcribe(`data:audio/wav;base64,${wav}`, {
+    language: 'en',
+    maxThreads: 4,
+  });
   const result = await promise;
 
   return { text: (result.result ?? '').trim(), millis: Date.now() - started };
 }
+
+export { pcmSeconds };
 
 /** Called when the worker leaves the capture screen, so the model is not held in memory. */
 export async function releaseVoice(): Promise<void> {
