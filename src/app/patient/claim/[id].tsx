@@ -18,6 +18,7 @@ interface Claim {
   lastConfirmedAt?: string;
   verifiedAt?: string;
   encounterId?: string;
+  emergencyDecision?: 'ADDED' | 'DECLINED';
 }
 
 interface EvidenceView {
@@ -62,9 +63,11 @@ export default function ClaimDetailScreen() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [sections, setSections] = useState<ExplanationSections | null>(null);
+  const [cardBusy, setCardBusy] = useState(false);
 
   const load = useCallback(async () => {
     setBusy(false);
+    setCardBusy(false);
     if (!id) return;
     try {
       setClaim(null);
@@ -119,16 +122,33 @@ export default function ClaimDetailScreen() {
   }
 
   const selfEntered = claim ? claim.status === 'SELF_REPORTED' || claim.status === 'UNVERIFIED' : false;
+  const isAllergy = claim.category === 'ALLERGIES';
+  const onCard = claim.emergencyDecision === 'ADDED';
 
   const remove = async () => {
     if (!id) return;
     setBusy(true);
     try {
       await api(`/patients/me/claims/${id}`, { method: 'DELETE' });
-      router.back();
+      router.navigate('/record');
     } catch (e) {
       setBusy(false);
       Alert.alert('Could not remove it', e instanceof Error ? e.message : 'Something went wrong.');
+    }
+  };
+
+  const decideCard = async (add: boolean) => {
+    if (!id) return;
+    setCardBusy(true);
+    try {
+      const updated = await api<Claim>(`/patients/me/claims/${id}/emergency`, {
+        method: add ? 'POST' : 'DELETE',
+      });
+      setClaim(updated);
+    } catch (e) {
+      Alert.alert('Could not update the card', e instanceof Error ? e.message : 'Something went wrong.');
+    } finally {
+      setCardBusy(false);
     }
   };
 
@@ -201,6 +221,43 @@ export default function ClaimDetailScreen() {
                 : 'Based on what was recorded. Not a diagnosis or a recommendation.'}
             </Text>
           </View>
+        ) : null}
+
+        {isAllergy ? (
+          <Card className="gap-3 p-3.5">
+            <View className="flex-row items-start gap-3">
+              <View
+                className={`h-9 w-9 items-center justify-center rounded-[10px] ${
+                  onCard ? 'bg-danger-soft' : 'bg-fill'
+                }`}>
+                <Feather
+                  name={onCard ? 'alert-triangle' : 'shield'}
+                  size={16}
+                  color={onCard ? '#D94848' : '#64748B'}
+                />
+              </View>
+              <View className="flex-1 gap-0.5">
+                <Text className="text-sm font-medium text-ink">
+                  {onCard ? 'On your emergency card' : 'Not on your emergency card'}
+                </Text>
+                <Meta>
+                  {onCard
+                    ? 'Anyone who scans your card can read this without asking you first.'
+                    : 'Your emergency card is the one part of your record a stranger can read without your approval. Nothing goes on it unless you put it there.'}
+                </Meta>
+              </View>
+            </View>
+            <Pressable
+              onPress={() => void decideCard(!onCard)}
+              disabled={cardBusy}
+              className={`h-[46px] flex-row items-center justify-center rounded-xl ${
+                onCard ? 'border border-line bg-surface' : 'bg-primary'
+              } ${cardBusy ? 'opacity-50' : ''}`}>
+              <Text className={`text-[15px] font-medium ${onCard ? 'text-ink' : 'text-white'}`}>
+                {cardBusy ? 'Saving…' : onCard ? 'Take it off the card' : 'Add to emergency card'}
+              </Text>
+            </Pressable>
+          </Card>
         ) : null}
 
         {claim.encounterId ? (

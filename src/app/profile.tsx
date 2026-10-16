@@ -118,6 +118,12 @@ export default function ProfileScreen() {
                   body="What a responder sees"
                   onPress={() => router.push('/patient/emergency')}
                 />
+                <Row
+                  icon="phone"
+                  title="Reach your card by phone"
+                  body="Dial a short code, no internet needed"
+                  onPress={() => router.push('/patient/ussd')}
+                />
               </>
             )}
           </View>

@@ -7,6 +7,8 @@ export interface PublicUser {
   role: Role
   patientId: string | null
   facility: string | null
+  /** The number USSD recognises this account by. Null until the patient adds one. */
+  phone: string | null
 }
 
 export interface AuthResponse {
@@ -79,6 +81,7 @@ export const register = (input: {
   fullName: string
   role: Role
   facility?: string
+  phone?: string
 }) => call<AuthResponse>('/auth/register', input)
 
 export const fetchMe = (token: string) => call<PublicUser>('/auth/me', undefined, token)

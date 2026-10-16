@@ -14,7 +14,7 @@ interface ErrorBody {
 }
 
 interface ApiOptions {
-  method?: "GET" | "POST" | "PUT" | "DELETE";
+  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   body?: object;
   /** Ignored. Auth now comes from the saved token. Kept so older callers still compile. */
   actorId?: string;

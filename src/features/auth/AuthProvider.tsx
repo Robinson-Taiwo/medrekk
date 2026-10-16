@@ -8,7 +8,14 @@ interface AuthValue {
   status: Status
   user: PublicUser | null
   signIn: (email: string, password: string) => Promise<void>
-  signUp: (input: { email: string; password: string; fullName: string; role: Role; facility?: string }) => Promise<void>
+  signUp: (input: {
+    email: string
+    password: string
+    fullName: string
+    role: Role
+    facility?: string
+    phone?: string
+  }) => Promise<void>
   signOut: () => Promise<void>
 }
 

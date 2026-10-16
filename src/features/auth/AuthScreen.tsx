@@ -16,6 +16,7 @@ export default function AuthScreen() {
   const [role, setRole] = useState<Role>('PATIENT')
   const [fullName, setFullName] = useState('')
   const [facility, setFacility] = useState('')
+  const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
@@ -35,6 +36,7 @@ export default function AuthScreen() {
         await signUp({
           email, password, fullName: fullName.trim(), role,
           facility: role === 'HEALTH_WORKER' && facility.trim() ? facility.trim() : undefined,
+          phone: phone.trim() ? phone.trim() : undefined,
         })
       } else {
         await signIn(email, password)
@@ -83,6 +85,16 @@ export default function AuthScreen() {
             {isRegister && (
               <TextInput className={inputClass} placeholder="Full name" placeholderTextColor="#9ca3af"
                 value={fullName} onChangeText={setFullName} autoComplete="name" />
+            )}
+            {isRegister && (
+              <View className="gap-1">
+                <TextInput className={inputClass} placeholder="Phone number (optional)" placeholderTextColor="#9ca3af"
+                  value={phone} onChangeText={setPhone} keyboardType="phone-pad" autoComplete="tel" />
+                <Text className="px-1 text-xs text-gray-500 dark:text-gray-400">
+                  Lets you reach your emergency card by dialling a short code from any phone, with no internet. You
+                  can add it later instead.
+                </Text>
+              </View>
             )}
             {isRegister && role === 'HEALTH_WORKER' && (
               <TextInput className={inputClass} placeholder="Facility (optional)" placeholderTextColor="#9ca3af"

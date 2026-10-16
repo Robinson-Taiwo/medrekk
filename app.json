@@ -20,7 +20,11 @@
       },
       "predictiveBackGestureEnabled": false,
       "permissions": [
-        "android.permission.CAMERA"
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
       ],
       "package": "com.taiwo101.medrekk"
     },
@@ -43,7 +47,16 @@
       "expo-sqlite",
       "expo-secure-store",
       "expo-mlkit-ocr",
-      "expo-build-properties",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "buildArchs": [
+              "arm64-v8a"
+            ]
+          }
+        }
+      ],
       "expo-audio",
       [
         "expo-image-picker",
@@ -56,6 +69,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "ac296d5c-d038-4bbe-a4dd-097b4db9efc8"
+      }
     }
   }
 }

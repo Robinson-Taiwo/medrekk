@@ -1,5 +1,6 @@
 import { Linking, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Feather from '@expo/vector-icons/Feather';
 
 import type { EmergencyProfileData } from './types';
 import EmergencyQr from './EmergencyQr';
@@ -39,7 +40,15 @@ function Entry({ kind, value, danger = false }: { kind: string; value: string; d
   );
 }
 
-export default function EmergencyCard({ profile, onEdit }: { profile: EmergencyProfileData; onEdit: () => void }) {
+interface Props {
+  profile: EmergencyProfileData;
+  onEdit: () => void;
+  /** Allergies recorded elsewhere in the record that the patient has not put on this card. */
+  offCardAllergies?: string[];
+  onReviewAllergies?: () => void;
+}
+
+export default function EmergencyCard({ profile, onEdit, offCardAllergies = [], onReviewAllergies }: Props) {
   const status = profile.verificationStatus;
   const rank = RANK[status] ?? 0;
 
@@ -102,6 +111,21 @@ export default function EmergencyCard({ profile, onEdit }: { profile: EmergencyP
               ))}
             </View>
           )}
+
+          {offCardAllergies.length > 0 ? (
+            <Pressable
+              onPress={onReviewAllergies}
+              disabled={!onReviewAllergies}
+              className="flex-row items-center gap-2.5 rounded-xl border border-dashed border-line px-3.5 py-3">
+              <Feather name="info" size={15} color="#B45309" />
+              <Text className="flex-1 text-[13px] leading-[19px] text-muted">
+                {offCardAllergies.length === 1
+                  ? '1 allergy in your record is not on this card.'
+                  : `${offCardAllergies.length} allergies in your record are not on this card.`}
+              </Text>
+              {onReviewAllergies ? <Feather name="chevron-right" size={16} color="#64748B" /> : null}
+            </Pressable>
+          ) : null}
         </View>
 
         <View className="flex-row items-center gap-3 rounded-xl bg-white/10 px-3.5 py-3">
