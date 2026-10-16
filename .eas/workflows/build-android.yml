@@ -1,0 +1,18 @@
+name: Build Android APK
+
+# Deliberately not every push to main: each run spends build quota and takes
+# ~10 minutes. Push to `release` when you actually want an installable APK, or
+# run it by hand from any branch with:
+#   npx eas-cli@latest workflow:run .eas/workflows/build-android.yml
+on:
+  push:
+    branches: ['release']
+
+jobs:
+  build_android:
+    type: build
+    params:
+      platform: android
+      # Matches the profile in eas.json: internal distribution, buildType apk,
+      # arm64-v8a only. Credentials already exist from the first successful build.
+      profile: preview

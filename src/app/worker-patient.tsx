@@ -6,7 +6,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/features/auth/AuthProvider';
 import { accessStatus, lookupPatient, requestAccess } from '@/features/worker/workerApi';
-import { patchWorkerSession, setWorkerSession, useWorkerSession } from '@/features/worker/workerSession';
+import {
+  patchWorkerSession, restoreWorkerSession, setWorkerSession, useWorkerSession,
+} from '@/features/worker/workerSession';
 
 const SCOPES = ['RECENT_ENCOUNTERS', 'ALLERGIES', 'CURRENT_MEDICATIONS'];
 
@@ -19,6 +21,13 @@ export default function WorkerPatientScreen() {
   const [reason, setReason] = useState('Clinic visit');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // An approved session outlives the app being reloaded or reclaimed by Android.
+  useFocusEffect(
+    useCallback(() => {
+      if (!session) void restoreWorkerSession();
+    }, [session]),
+  );
 
   // While the patient decides, poll so the screen moves on by itself.
   useFocusEffect(
