@@ -32,9 +32,12 @@ export async function transcribeFile(uri: string): Promise<Transcription> {
   const started = Date.now();
   const ctx = await getContext();
 
+  // The recorder hands back a bare absolute path; whisper.rn expects a file URL.
+  const filePath = uri.startsWith('file://') ? uri : `file://${uri}`;
+
   // The English-only model is told so explicitly: left to detect, it sometimes decides a Nigerian
   // accent is another language and translates rather than transcribing.
-  const { promise } = ctx.transcribe(uri, { language: 'en', maxThreads: 4 });
+  const { promise } = ctx.transcribe(filePath, { language: 'en', maxThreads: 4 });
   const result = await promise;
 
   return { text: (result.result ?? '').trim(), millis: Date.now() - started };
