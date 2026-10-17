@@ -149,7 +149,7 @@ export default function VisitScreen() {
                     <Text className="text-[15px] font-medium text-ink">{claim.value}</Text>
                     <Meta>Added to your record from this visit</Meta>
                   </View>
-                  <Feather name="chevron-right" size={18} color="#64748B" />
+                  <Feather name="chevron-right" size={18} color="#5D6C82" />
                 </Card>
               </Pressable>
             ))}

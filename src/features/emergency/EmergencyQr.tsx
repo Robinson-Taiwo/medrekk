@@ -49,7 +49,7 @@ export default function EmergencyQr() {
             <QRCode value={url} size={136} color="#142D2A" backgroundColor="#FFFFFF" />
           ) : (
             <View className="h-[136px] w-[136px] items-center justify-center">
-              {error ? <Feather name="alert-circle" size={22} color="#64748B" /> : <ActivityIndicator />}
+              {error ? <Feather name="alert-circle" size={22} color="#5D6C82" /> : <ActivityIndicator />}
             </View>
           )}
         </View>
@@ -82,7 +82,7 @@ export default function EmergencyQr() {
             ) : null}
 
             <View className="max-w-[330px] flex-row items-start gap-2.5 rounded-xl bg-fill px-3.5 py-3">
-              <Feather name="lock" size={15} color="#64748B" />
+              <Feather name="lock" size={15} color="#5D6C82" />
               <Text className="flex-1 text-xs leading-[17px] text-muted">
                 Anyone who scans this sees your emergency card only, without your approval. The QR holds a link, not
                 medical data, and every open is logged in your history.

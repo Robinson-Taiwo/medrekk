@@ -97,7 +97,7 @@ export default function UssdSetupScreen() {
   const turnOff = () =>
     Alert.alert(
       'Turn off dialling?',
-      'Your PIN is deleted. Nobody will be able to reach your emergency card by phone until you set a new one.',
+      'Your PIN is deleted. You will not be able to reach your record by phone until you set a new one. Your emergency card can still be looked up with your MedRekk Code, as it always could.',
       [
         { text: 'Keep it on', style: 'cancel' },
         {
@@ -150,25 +150,27 @@ export default function UssdSetupScreen() {
           <Text className="text-[26px] font-semibold leading-8 tracking-tight text-ink">Reach your card by phone</Text>
           <Text className="text-[15px] leading-[22px] text-muted">
             Dial a short code from any phone — a borrowed one, a feature phone, no internet needed. You enter a
-            4-digit PIN, then you can read your emergency card and your MedRekk Code.
+            4-digit PIN, then you can read your medicines, allergies, test results, past conditions and recent
+            visits, as well as your emergency card and your MedRekk Code.
           </Text>
         </View>
 
         <Card className="gap-2.5 p-4">
           <Eyebrow>What this does and does not show</Eyebrow>
           <Text className="text-[15px] leading-[22px] text-ink">
-            Only your emergency card and your MedRekk Code can be read this way.
+            Your PIN opens your own record — not anyone else's, and nothing a health worker has not yet had
+            confirmed.
           </Text>
           <Text className="text-[13px] leading-[19px] text-muted">
-            Not your full record. Text sent over a dialled code passes through the phone network unencrypted, and
-            whoever is standing near the handset can read the screen. Your full record still needs your approval in
-            the app, every time.
+            Read it somewhere you would be happy to read a letter. Text sent over a dialled code crosses the phone
+            network unencrypted, and whoever is standing beside you can read the screen. Giving a health worker
+            access to add to your record is still a separate approval in the app, every time.
           </Text>
         </Card>
 
         {lockedMinutes > 0 ? (
           <View className="flex-row items-start gap-2.5 rounded-xl bg-danger-soft p-3.5">
-            <Feather name="lock" size={15} color="#D94848" />
+            <Feather name="lock" size={15} color="#CE2B2B" />
             <Text className="flex-1 text-[13px] leading-[19px] text-danger">
               Dialling is locked for {lockedMinutes} more {lockedMinutes === 1 ? 'minute' : 'minutes'} after too many
               wrong PINs. Your record is untouched.
@@ -184,7 +186,7 @@ export default function UssdSetupScreen() {
                 <TextInput
                   className={inputClass}
                   placeholder="08031234567"
-                  placeholderTextColor="#94A3B8"
+                  placeholderTextColor="#7C8A9C"
                   value={phoneDraft}
                   onChangeText={setPhoneDraft}
                   keyboardType="phone-pad"
@@ -266,7 +268,7 @@ export default function UssdSetupScreen() {
               <TextInput
                 className={inputClass}
                 placeholder="New PIN"
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor="#7C8A9C"
                 value={pin}
                 onChangeText={(next) => setPin(next.replace(/\D/g, '').slice(0, 4))}
                 keyboardType="number-pad"
@@ -276,7 +278,7 @@ export default function UssdSetupScreen() {
               <TextInput
                 className={inputClass}
                 placeholder="Enter it again"
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor="#7C8A9C"
                 value={confirm}
                 onChangeText={(next) => setConfirm(next.replace(/\D/g, '').slice(0, 4))}
                 keyboardType="number-pad"

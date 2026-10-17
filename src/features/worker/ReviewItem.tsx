@@ -45,7 +45,7 @@ export default function ReviewItem({ item, index, fromAi, onChange, onRemove }: 
             <>
               {fromAi ? (
                 <View className="h-6 flex-row items-center gap-1.5 rounded-full bg-neutral-soft px-2.5">
-                  <Feather name="zap" size={11} color="#64748B" />
+                  <Feather name="zap" size={11} color="#5D6C82" />
                   <Text className="text-xs font-medium text-muted">AI draft</Text>
                 </View>
               ) : null}
@@ -58,7 +58,7 @@ export default function ReviewItem({ item, index, fromAi, onChange, onRemove }: 
             </>
           )}
           <Pressable onPress={() => onRemove(index)} hitSlop={8} className="pl-1">
-            <Feather name="x" size={16} color="#94A3B8" />
+            <Feather name="x" size={16} color="#7C8A9C" />
           </Pressable>
         </View>
       </View>
@@ -68,7 +68,7 @@ export default function ReviewItem({ item, index, fromAi, onChange, onRemove }: 
         onChangeText={(value) => onChange(index, { value, confirmed: false })}
         multiline
         placeholder="What was recorded"
-        placeholderTextColor="#94A3B8"
+        placeholderTextColor="#7C8A9C"
         className="text-[15px] font-medium leading-[21px] text-ink"
       />
     </View>

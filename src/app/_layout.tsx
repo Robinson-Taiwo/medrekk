@@ -1,18 +1,24 @@
 import '../global.css'
 
 import { useEffect } from 'react'
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router'
+import { DefaultTheme, ThemeProvider } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
-import { ActivityIndicator, useColorScheme, View } from 'react-native'
+import { ActivityIndicator, View } from 'react-native'
 
 import AppTabs from '@/components/app-tabs'
 import { AuthProvider, useAuth } from '@/features/auth/AuthProvider'
 import AuthScreen from '@/features/auth/AuthScreen'
+import { useSyncOnReconnect } from '@/sync/useSyncOnReconnect'
 
 SplashScreen.preventAutoHideAsync()
 
 function Gate() {
-  const { status } = useAuth()
+  const { status, user } = useAuth()
+
+  // Empties the queue of anything captured while this handset had no connection. Mounted
+  // here rather than on the capture screen so a worker who saves a visit and closes the app
+  // still has it sent the next time the phone is online.
+  useSyncOnReconnect(user?.role === 'HEALTH_WORKER' ? user.id : undefined)
 
   // Nothing else hides the splash since the animated overlay was removed with the
   // Expo branding, so it has to go when there is real UI to show. The ceiling is
@@ -40,9 +46,11 @@ function Gate() {
 }
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme()
+  // One palette, pinned. Every screen paints the light MedRekk tokens, so letting the
+  // navigator switch to DarkTheme on a dark-mode phone only gave the chrome a dark
+  // background behind light screens — the same split that was fixed on the website.
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <ThemeProvider value={DefaultTheme}>
       <AuthProvider>
         <Gate />
       </AuthProvider>

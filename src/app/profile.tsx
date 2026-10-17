@@ -37,7 +37,7 @@ function Row({
         {body ? <Meta>{body}</Meta> : null}
       </View>
       {value ? <Text className="text-[13px] text-muted">{value}</Text> : null}
-      {onPress ? <Feather name="chevron-right" size={18} color="#64748B" /> : null}
+      {onPress ? <Feather name="chevron-right" size={18} color="#5D6C82" /> : null}
     </Pressable>
   );
 }
@@ -132,7 +132,7 @@ export default function ProfileScreen() {
         <Pressable
           onPress={confirmSignOut}
           className="h-[52px] flex-row items-center justify-center gap-2 rounded-xl border border-line bg-surface">
-          <Feather name="log-out" size={17} color="#D94848" />
+          <Feather name="log-out" size={17} color="#CE2B2B" />
           <Text className="text-base font-medium text-danger">Sign out</Text>
         </Pressable>
       </ScrollView>

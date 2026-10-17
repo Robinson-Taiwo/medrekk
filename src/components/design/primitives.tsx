@@ -65,8 +65,11 @@ export function PrimaryButton({
     <Pressable
       onPress={onPress}
       disabled={disabled}
-      className={`h-[52px] flex-row items-center justify-center rounded-xl ${disabled ? 'bg-dim' : 'bg-primary'}`}>
-      <Text className="text-base font-medium text-white">{label}</Text>
+      className={`h-[52px] flex-row items-center justify-center rounded-xl ${
+        disabled ? 'bg-track' : 'bg-primary'
+      }`}>
+      {/* A disabled button keeps a readable label: white on dim was 1.48:1, effectively blank. */}
+      <Text className={`text-base font-medium ${disabled ? 'text-muted' : 'text-white'}`}>{label}</Text>
     </Pressable>
   );
 }

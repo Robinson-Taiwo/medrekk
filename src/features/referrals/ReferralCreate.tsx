@@ -117,10 +117,10 @@ export default function ReferralCreate(props: { onCancel: () => void; onCreated:
         <Text className="text-3xl font-bold text-gray-900 dark:text-white">New referral</Text>
 
         <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">Destination (optional)</Text>
-        <TextInput className={inputClass} placeholder="e.g. General Hospital" placeholderTextColor="#9ca3af" value={destination} onChangeText={setDestination} />
+        <TextInput className={inputClass} placeholder="e.g. General Hospital" placeholderTextColor="#7C8A9C" value={destination} onChangeText={setDestination} />
 
         <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">Reason for referral</Text>
-        <TextInput className={inputClass} placeholder="e.g. Specialist review" placeholderTextColor="#9ca3af" value={reason} onChangeText={setReason} />
+        <TextInput className={inputClass} placeholder="e.g. Specialist review" placeholderTextColor="#7C8A9C" value={reason} onChangeText={setReason} />
 
         <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">Note (optional)</Text>
         <TextInput
@@ -128,7 +128,7 @@ export default function ReferralCreate(props: { onCancel: () => void; onCreated:
           style={{ minHeight: 64, textAlignVertical: "top" }}
           multiline
           placeholder="Anything the provider should know"
-          placeholderTextColor="#9ca3af"
+          placeholderTextColor="#7C8A9C"
           value={note}
           onChangeText={setNote}
         />

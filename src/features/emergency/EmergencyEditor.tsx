@@ -21,7 +21,7 @@ function ListField(props: { label: string; value: string; onChange: (v: string) 
         style={{ minHeight: 64, textAlignVertical: "top" }}
         multiline
         placeholder={props.placeholder}
-        placeholderTextColor="#9ca3af"
+        placeholderTextColor="#7C8A9C"
         value={props.value}
         onChangeText={props.onChange}
         autoCapitalize="sentences"
@@ -120,11 +120,11 @@ export default function EmergencyEditor(props: {
         </View>
 
         <Text className="mt-2 text-sm font-medium text-gray-700 dark:text-gray-300">Emergency contact</Text>
-        <TextInput className={inputClass} placeholder="Name" placeholderTextColor="#9ca3af" value={cName} onChangeText={setCName} />
+        <TextInput className={inputClass} placeholder="Name" placeholderTextColor="#7C8A9C" value={cName} onChangeText={setCName} />
         <TextInput
           className={inputClass}
           placeholder="Phone, e.g. +2348000000000"
-          placeholderTextColor="#9ca3af"
+          placeholderTextColor="#7C8A9C"
           value={cPhone}
           onChangeText={setCPhone}
           keyboardType="phone-pad"
@@ -132,7 +132,7 @@ export default function EmergencyEditor(props: {
         <TextInput
           className={inputClass}
           placeholder="Relationship, e.g. Brother"
-          placeholderTextColor="#9ca3af"
+          placeholderTextColor="#7C8A9C"
           value={cRel}
           onChangeText={setCRel}
         />

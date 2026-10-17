@@ -4,8 +4,15 @@ import { ActivityIndicator, Alert, Pressable, ScrollView, Text, TextInput, View 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Feather from '@expo/vector-icons/Feather';
 
-import { captureEncounter, discardEncounter, reviewEncounter, saveDraft, type ClaimCategory } from '@/features/worker/workerApi';
+import { type ClaimCategory } from '@/features/worker/workerApi';
+import {
+  newEncounterId,
+  queueVisit,
+  removeQueuedVisit,
+  syncNow,
+} from '@/features/worker/offlineEncounter';
 import { useWorkerSession } from '@/features/worker/workerSession';
+import { useAuth } from '@/features/auth/AuthProvider';
 import ReviewItem, { type ReviewEntry } from '@/features/worker/ReviewItem';
 import { findConflicts } from '@/features/worker/conflicts';
 import { structure } from '@/features/ai/structure';
@@ -14,6 +21,7 @@ import { refreshWhisperStatus, useWhisperStatus } from '@/features/ai/whisperSto
 import { useVoiceCapture } from '@/features/ai/useVoiceCapture';
 import { captureFromCamera, captureFromLibrary } from '@/features/ai/photo';
 import { Card, Meta } from '@/components/design/primitives';
+import { C } from '@/components/design/tokens';
 import { BottomTabInset } from '@/constants/theme';
 
 type Stage = 'CAPTURE' | 'PROCESSING' | 'REVIEW' | 'SAVED';
@@ -43,6 +51,9 @@ const GROUP_HEADING: Record<string, string> = {
 
 export default function WorkerEncounterScreen() {
   const session = useWorkerSession();
+  const { user } = useAuth();
+  // Whether the record has it yet, as opposed to whether this handset has it.
+  const [synced, setSynced] = useState(false);
   const [stage, setStage] = useState<Stage>('CAPTURE');
   const [raw, setRaw] = useState('');
   const [captureMode, setCaptureMode] = useState<(typeof CAPTURE_MODES)[number]['key']>('TYPE');
@@ -97,7 +108,7 @@ export default function WorkerEncounterScreen() {
       <SafeAreaView className="flex-1 items-center justify-center bg-canvas p-6">
         <View className="items-center gap-3">
           <View className="h-14 w-14 items-center justify-center rounded-2xl bg-fill">
-            <Feather name="user-x" size={22} color="#64748B" />
+            <Feather name="user-x" size={22} color="#5D6C82" />
           </View>
           <Text className="text-[17px] font-semibold text-ink">No approved patient</Text>
           <Text className="max-w-[280px] text-center text-sm leading-5 text-muted">
@@ -112,22 +123,16 @@ export default function WorkerEncounterScreen() {
     setError(null);
     setStage('PROCESSING');
     try {
-      const encounter = await captureEncounter(session.token, raw.trim());
-      setEncounterId(encounter.id);
+      // Nothing in here touches the network. The model, the structuring and the review all
+      // happen on the handset, and the visit is not sent anywhere until the worker saves it.
       await refreshModelStatus();
       const result = await structure(raw.trim());
       const engine = `${result.source === 'MODEL' ? 'On-device model' : 'Rule-based'} · ${(
         result.millis / 1000
       ).toFixed(1)}s`;
       setAiNote(result.note ? `${engine} — ${result.note}` : engine);
-      try {
-        await saveDraft(session.token, encounter.id, result.items, 'AI');
-        setFromAi(true);
-      } catch {
-        // A rejected draft is not a failure: the raw input is kept and the worker enters it manually.
-        setFromAi(false);
-      }
       setItems(result.items.map((item) => ({ ...item, confirmed: false })));
+      setFromAi(true);
       setStage('REVIEW');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong.');
@@ -136,7 +141,6 @@ export default function WorkerEncounterScreen() {
   };
 
   const save = async () => {
-    if (!encounterId) return;
     const clean = items.filter((i) => i.value.trim().length >= 2);
     if (clean.length === 0) {
       setError('Add at least one item, or discard this encounter.');
@@ -144,15 +148,31 @@ export default function WorkerEncounterScreen() {
     }
     setError(null);
     try {
-      const done = await reviewEncounter(
-        session.token,
-        encounterId,
-        clean.map(({ confirmed: _confirmed, ...item }) => item),
-      );
-      setSavedCount(done.createdClaimIds.length);
+      // Written to this handset first, which cannot fail for want of a network. The record
+      // catches up when there is one, and the worker is told which of the two has happened.
+      const id = encounterId ?? newEncounterId();
+      setEncounterId(id);
+
+      await queueVisit({
+        encounterId: id,
+        accessToken: session.token,
+        rawInput: raw.trim(),
+        captureMethod: captureMode === 'TYPE' ? 'TEXT' : captureMode,
+        items: clean.map(({ confirmed: _confirmed, ...item }) => item),
+      });
+
+      setSavedCount(clean.length);
       setStage('SAVED');
+
+      // Not awaited: the visit is already safe, and the worker should not watch a spinner
+      // for a request whose failure changes nothing.
+      void syncNow(user?.id ?? 'worker').then(() => setSynced(true));
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Something went wrong.');
+      setError(
+        e instanceof Error
+          ? `This visit could not be saved on this phone. ${e.message}`
+          : 'This visit could not be saved on this phone.',
+      );
     }
   };
 
@@ -165,6 +185,7 @@ export default function WorkerEncounterScreen() {
     setShowRaw(false);
     setError(null);
     setAiNote(null);
+    setSynced(false);
   };
 
   const update = (index: number, patch: Partial<ReviewEntry>) =>
@@ -174,13 +195,9 @@ export default function WorkerEncounterScreen() {
   const conflicts = findConflicts(items);
 
   const runDiscard = async () => {
-    if (encounterId && session) {
-      try {
-        await discardEncounter(session.token, encounterId);
-      } catch {
-        // The draft is being abandoned either way; a failed call should not trap the worker here.
-      }
-    }
+    // Only ever queued locally, so discarding is a local delete. A visit already accepted by
+    // the record is not touched here: that is the patient's to remove, not a passing worker's.
+    if (encounterId) await removeQueuedVisit(encounterId);
     reset();
   };
 
@@ -231,10 +248,10 @@ export default function WorkerEncounterScreen() {
                     className={`h-9 flex-1 flex-row items-center justify-center gap-1.5 rounded-[10px] ${
                       active ? 'border border-line bg-surface' : ''
                     }`}>
-                    <Feather name={mode.icon} size={14} color={active ? '#142D2A' : usable ? '#64748B' : '#94A3B8'} />
+                    <Feather name={mode.icon} size={14} color={active ? C.ink : usable ? C.muted : C.hint} />
                     <Text
                       className={`text-[13px] ${
-                        active ? 'font-medium text-ink' : usable ? 'text-muted' : 'text-dim'
+                        active ? 'font-medium text-ink' : usable ? 'text-muted' : 'text-hint'
                       }`}>
                       {mode.label}
                     </Text>
@@ -256,7 +273,7 @@ export default function WorkerEncounterScreen() {
                 {voice.stage === 'RECORDING' ? (
                   <>
                     <View className="h-14 w-14 items-center justify-center rounded-full bg-danger-soft">
-                      <Feather name="mic" size={22} color="#D94848" />
+                      <Feather name="mic" size={22} color="#CE2B2B" />
                     </View>
                     <Text className="text-[15px] font-medium text-ink">Listening…</Text>
                     <Meta>Say what the patient told you. Tap stop when you are done.</Meta>
@@ -282,7 +299,7 @@ export default function WorkerEncounterScreen() {
                   multiline
                   textAlignVertical="top"
                   placeholder="Fever and headache for three days. Temp 38.4. Allergic to penicillin..."
-                  placeholderTextColor="#94A3B8"
+                  placeholderTextColor="#7C8A9C"
                   className="min-h-[200px] p-3.5 text-base leading-6 text-ink"
                 />
               </Card>
@@ -334,7 +351,7 @@ export default function WorkerEncounterScreen() {
             {voice.error ? <Text className="text-sm text-danger">{voice.error}</Text> : null}
 
             <View className="flex-row items-start gap-2.5 rounded-xl bg-fill px-3.5 py-3">
-              <Feather name="cpu" size={16} color="#64748B" />
+              <Feather name="cpu" size={16} color="#5D6C82" />
               <Text className="flex-1 text-xs leading-[17px] text-muted">
                 Structured on this phone. The note is not sent anywhere while the AI drafts it.
               </Text>
@@ -346,10 +363,15 @@ export default function WorkerEncounterScreen() {
               disabled={raw.trim().length < 3}
               onPress={() => void process()}
               className={`h-[52px] flex-row items-center justify-center gap-2 rounded-xl ${
-                raw.trim().length < 3 ? 'bg-dim' : 'bg-primary'
+                raw.trim().length < 3 ? 'bg-track' : 'bg-primary'
               }`}>
-              <Feather name="zap" size={17} color="#FFFFFF" />
-              <Text className="text-base font-medium text-white">Draft with AI</Text>
+              <Feather name="zap" size={17} color={raw.trim().length < 3 ? C.muted : C.surface} />
+              <Text
+                className={`text-base font-medium ${
+                  raw.trim().length < 3 ? 'text-muted' : 'text-white'
+                }`}>
+                Draft with AI
+              </Text>
             </Pressable>
           </>
         ) : null}
@@ -384,7 +406,7 @@ export default function WorkerEncounterScreen() {
                     Check with the patient
                   </Text>
                   <View className="h-6 flex-row items-center gap-1.5 rounded-full bg-danger-soft px-2.5">
-                    <Feather name="alert-triangle" size={11} color="#D94848" />
+                    <Feather name="alert-triangle" size={11} color="#CE2B2B" />
                     <Text className="text-xs font-medium text-danger">Conflict</Text>
                   </View>
                 </View>
@@ -463,9 +485,24 @@ export default function WorkerEncounterScreen() {
             </View>
             <Text className="text-[22px] font-semibold tracking-tight text-ink">Saved</Text>
             <Text className="max-w-[300px] text-center text-sm leading-5 text-muted">
-              {savedCount} item{savedCount === 1 ? '' : 's'} added to {session.patientName}&apos;s record, marked
+              {savedCount} item{savedCount === 1 ? '' : 's'} saved to {session.patientName}&apos;s record, marked
               unverified until a clinician confirms them.
             </Text>
+            <View
+              className={`mt-3 flex-row items-start gap-2.5 rounded-xl px-3.5 py-3 ${
+                synced ? 'bg-primary-soft' : 'bg-fill'
+              }`}>
+              <Feather
+                name={synced ? 'check-circle' : 'clock'}
+                size={16}
+                color={synced ? C.primary : C.muted}
+              />
+              <Text className="flex-1 text-[13px] leading-[19px] text-ink">
+                {synced
+                  ? 'Sent to the record.'
+                  : 'Held on this phone. It will be sent on its own as soon as there is a connection — you can close the app.'}
+              </Text>
+            </View>
             <Pressable onPress={reset} className="mt-2 h-[52px] justify-center rounded-xl bg-primary px-6">
               <Text className="text-base font-medium text-white">Record another</Text>
             </Pressable>

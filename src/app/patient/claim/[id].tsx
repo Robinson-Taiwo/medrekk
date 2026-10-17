@@ -45,7 +45,7 @@ const STATUS_EXPLAIN: Record<string, string> = {
 };
 
 const STATUS_STYLE: Record<string, { bg: string; fg: string; icon: keyof typeof Feather.glyphMap; hex: string }> = {
-  UNVERIFIED: { bg: 'bg-neutral-soft', fg: 'text-muted', icon: 'help-circle', hex: '#64748B' },
+  UNVERIFIED: { bg: 'bg-neutral-soft', fg: 'text-muted', icon: 'help-circle', hex: '#5D6C82' },
   SELF_REPORTED: { bg: 'bg-warn-soft', fg: 'text-warn', icon: 'user', hex: '#B45309' },
   EVIDENCE_BACKED: { bg: 'bg-primary-soft', fg: 'text-primary', icon: 'paperclip', hex: '#0F6E56' },
   CLINICALLY_VERIFIED: { bg: 'bg-primary-soft', fg: 'text-primary', icon: 'check', hex: '#0F6E56' },
@@ -233,7 +233,7 @@ export default function ClaimDetailScreen() {
                 <Feather
                   name={onCard ? 'alert-triangle' : 'shield'}
                   size={16}
-                  color={onCard ? '#D94848' : '#64748B'}
+                  color={onCard ? '#CE2B2B' : '#5D6C82'}
                 />
               </View>
               <View className="flex-1 gap-0.5">
@@ -270,7 +270,7 @@ export default function ClaimDetailScreen() {
                 <Text className="text-sm font-medium text-ink">See the whole visit</Text>
                 <Meta>The note this was taken from, and everything else recorded that day</Meta>
               </View>
-              <Feather name="chevron-right" size={18} color="#64748B" />
+              <Feather name="chevron-right" size={18} color="#5D6C82" />
             </Card>
           </Pressable>
         ) : null}
@@ -346,7 +346,7 @@ export default function ClaimDetailScreen() {
             className={`h-[52px] flex-row items-center justify-center gap-2 rounded-xl border border-line bg-surface ${
               busy ? 'opacity-50' : ''
             }`}>
-            <Feather name="trash-2" size={17} color="#D94848" />
+            <Feather name="trash-2" size={17} color="#CE2B2B" />
             <Text className="text-base font-medium text-danger">
               {busy ? 'Removing…' : 'Remove from my record'}
             </Text>

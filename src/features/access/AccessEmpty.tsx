@@ -20,7 +20,7 @@ function ControlRow({ icon, title, body, value, onPress }: RowProps) {
         <Text className="text-xs text-muted">{body}</Text>
       </View>
       <Text className="text-[13px] text-muted">{value}</Text>
-      <Feather name="chevron-right" size={18} color="#64748B" />
+      <Feather name="chevron-right" size={18} color="#5D6C82" />
     </Pressable>
   );
 }
@@ -28,7 +28,7 @@ function ControlRow({ icon, title, body, value, onPress }: RowProps) {
 function EmptyRow({ icon, label }: { icon: keyof typeof Feather.glyphMap; label: string }) {
   return (
     <View className="flex-row items-center gap-2.5 rounded-xl border border-dashed border-line px-3.5 py-3.5">
-      <Feather name={icon} size={16} color="#64748B" />
+      <Feather name={icon} size={16} color="#5D6C82" />
       <Text className="text-sm text-muted">{label}</Text>
     </View>
   );

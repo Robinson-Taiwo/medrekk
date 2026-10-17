@@ -83,12 +83,12 @@ export default function AuthScreen() {
             )}
 
             {isRegister && (
-              <TextInput className={inputClass} placeholder="Full name" placeholderTextColor="#9ca3af"
+              <TextInput className={inputClass} placeholder="Full name" placeholderTextColor="#7C8A9C"
                 value={fullName} onChangeText={setFullName} autoComplete="name" />
             )}
             {isRegister && (
               <View className="gap-1">
-                <TextInput className={inputClass} placeholder="Phone number (optional)" placeholderTextColor="#9ca3af"
+                <TextInput className={inputClass} placeholder="Phone number (optional)" placeholderTextColor="#7C8A9C"
                   value={phone} onChangeText={setPhone} keyboardType="phone-pad" autoComplete="tel" />
                 <Text className="px-1 text-xs text-gray-500 dark:text-gray-400">
                   Lets you reach your emergency card by dialling a short code from any phone, with no internet. You
@@ -97,13 +97,13 @@ export default function AuthScreen() {
               </View>
             )}
             {isRegister && role === 'HEALTH_WORKER' && (
-              <TextInput className={inputClass} placeholder="Facility (optional)" placeholderTextColor="#9ca3af"
+              <TextInput className={inputClass} placeholder="Facility (optional)" placeholderTextColor="#7C8A9C"
                 value={facility} onChangeText={setFacility} />
             )}
-            <TextInput className={inputClass} placeholder="Email" placeholderTextColor="#9ca3af"
+            <TextInput className={inputClass} placeholder="Email" placeholderTextColor="#7C8A9C"
               value={email} onChangeText={setEmail} autoCapitalize="none" autoCorrect={false}
               keyboardType="email-address" autoComplete="email" />
-            <TextInput className={inputClass} placeholder="Password (8+ characters)" placeholderTextColor="#9ca3af"
+            <TextInput className={inputClass} placeholder="Password (8+ characters)" placeholderTextColor="#7C8A9C"
               value={password} onChangeText={setPassword} secureTextEntry
               autoComplete={isRegister ? 'new-password' : 'current-password'} onSubmitEditing={submit} />
 

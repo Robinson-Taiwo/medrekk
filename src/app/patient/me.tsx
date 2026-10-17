@@ -8,6 +8,7 @@ import { fetchVerifications, type VerificationEventView } from '@/features/verif
 import { api } from '@/services/api';
 import ReferralsFlow from '@/features/referrals/ReferralsFlow';
 import { Card, Meta } from '@/components/design/primitives';
+import { CATEGORY_ICON, summarise } from '@/features/record/categories';
 import { BottomTabInset } from '@/constants/theme';
 
 type Category = 'ALLERGIES' | 'CURRENT_MEDICATIONS' | 'PAST_MEDICAL_HISTORY';
@@ -44,14 +45,6 @@ const STATUS_STYLE: Record<string, { bg: string; fg: string; icon: keyof typeof 
   CLINICALLY_VERIFIED: { bg: 'bg-primary-soft', fg: 'text-primary', icon: 'check' },
 };
 
-const CATEGORY_ICON: Record<string, keyof typeof Feather.glyphMap> = {
-  ALLERGIES: 'alert-triangle',
-  CURRENT_MEDICATIONS: 'thermometer',
-  RECENT_ENCOUNTERS: 'activity',
-  PAST_MEDICAL_HISTORY: 'book-open',
-  LAB_RESULTS: 'droplet',
-};
-
 const FILTERS = [
   { key: 'ALL', label: 'All' },
   { key: 'ALLERGIES', label: 'Allergies' },
@@ -85,31 +78,6 @@ type Row =
   | { kind: 'VISIT'; encounterId: string; claims: Claim[]; at: number }
   | { kind: 'CLAIM'; claim: Claim; at: number };
 
-const CATEGORY_NOUN: Record<string, [string, string]> = {
-  ALLERGIES: ['allergy', 'allergies'],
-  CURRENT_MEDICATIONS: ['medicine', 'medicines'],
-  PAST_MEDICAL_HISTORY: ['history item', 'history items'],
-  LAB_RESULTS: ['test result', 'test results'],
-};
-
-/**
- * Says what shape the visit was without naming anything clinical. The timeline is the most
- * glanceable screen in the app, so "2 medicines, 1 allergy" tells the patient what they need
- * without showing a passer-by what they are being treated for.
- */
-function summarise(claims: Claim[]): string {
-  const counts = new Map<string, number>();
-  for (const claim of claims) counts.set(claim.category, (counts.get(claim.category) ?? 0) + 1);
-
-  const parts = [...counts.entries()].map(([category, n]) => {
-    const nouns = CATEGORY_NOUN[category];
-    const noun = nouns ? (n === 1 ? nouns[0] : nouns[1]) : n === 1 ? 'item' : 'items';
-    return `${n} ${noun}`;
-  });
-
-  return parts.join(', ');
-}
-
 function VisitRow({ row, last, onPress }: { row: Extract<Row, { kind: 'VISIT' }>; last: boolean; onPress: () => void }) {
   const source = row.claims[0]?.source ?? 'a health worker';
 
@@ -131,7 +99,7 @@ function VisitRow({ row, last, onPress }: { row: Extract<Row, { kind: 'VISIT' }>
             </Meta>
             <Meta>{summarise(row.claims)}</Meta>
           </View>
-          <Feather name="chevron-right" size={18} color="#64748B" />
+          <Feather name="chevron-right" size={18} color="#5D6C82" />
         </Card>
       </Pressable>
     </View>
@@ -162,7 +130,7 @@ function TimelineEntry({ claim, last, onPress }: { claim: Claim; last: boolean; 
           <Feather
             name={style.icon}
             size={11}
-            color={style.fg === 'text-primary' ? '#0F6E56' : style.fg === 'text-warn' ? '#B45309' : '#64748B'}
+            color={style.fg === 'text-primary' ? '#0F6E56' : style.fg === 'text-warn' ? '#B45309' : '#5D6C82'}
           />
           <Text className={`text-xs font-medium ${style.fg}`}>{STATUS_LABEL[claim.status] ?? claim.status}</Text>
         </View>
@@ -201,7 +169,7 @@ function AddSheet({ onClose, onAdded }: { onClose: () => void; onAdded: (claim: 
           <View className="flex-row items-center justify-between">
             <Text className="text-lg font-semibold text-ink">Add to your record</Text>
             <Pressable onPress={onClose} hitSlop={8}>
-              <Feather name="x" size={20} color="#64748B" />
+              <Feather name="x" size={20} color="#5D6C82" />
             </Pressable>
           </View>
 
@@ -223,7 +191,7 @@ function AddSheet({ onClose, onAdded }: { onClose: () => void; onAdded: (claim: 
           <TextInput
             className="rounded-xl border border-line bg-surface px-4 py-3.5 text-base text-ink"
             placeholder="e.g. Penicillin"
-            placeholderTextColor="#94A3B8"
+            placeholderTextColor="#7C8A9C"
             value={value}
             onChangeText={setValue}
             autoFocus
@@ -236,9 +204,14 @@ function AddSheet({ onClose, onAdded }: { onClose: () => void; onAdded: (claim: 
             onPress={() => void add()}
             disabled={busy || value.trim().length === 0}
             className={`h-[52px] items-center justify-center rounded-xl ${
-              busy || value.trim().length === 0 ? 'bg-dim' : 'bg-primary'
+              busy || value.trim().length === 0 ? 'bg-track' : 'bg-primary'
             }`}>
-            <Text className="text-base font-medium text-white">Add</Text>
+            <Text
+              className={`text-base font-medium ${
+                busy || value.trim().length === 0 ? 'text-muted' : 'text-white'
+              }`}>
+              Add
+            </Text>
           </Pressable>
           <Meta>This is saved as self-reported until a health worker confirms it.</Meta>
         </View>
@@ -354,7 +327,7 @@ function RecordScreen({ onOpenReferrals }: { onOpenReferrals: () => void }) {
         ) : grouped.length === 0 ? (
           <View className="items-center gap-3 rounded-xl border border-dashed border-line bg-surface px-5 py-8">
             <View className="h-14 w-14 items-center justify-center rounded-2xl bg-fill">
-              <Feather name="file-text" size={22} color="#64748B" />
+              <Feather name="file-text" size={22} color="#5D6C82" />
             </View>
             <Text className="text-[17px] font-semibold text-ink">
               {filter === 'ALL' ? 'Nothing recorded yet' : 'Nothing in this category'}

@@ -83,7 +83,7 @@ function TabBar({ state, navigation, tabs }: TabBarProps) {
 
         return (
           <Pressable key={route.key} onPress={onPress} className="w-[60px] items-center gap-1">
-            <Feather name={tab.icon} size={22} color={focused ? '#0F6E56' : '#64748B'} />
+            <Feather name={tab.icon} size={22} color={focused ? '#0F6E56' : '#5D6C82'} />
             <Text className={`text-[11px] font-medium ${focused ? 'text-primary' : 'text-muted'}`}>{tab.label}</Text>
           </Pressable>
         );

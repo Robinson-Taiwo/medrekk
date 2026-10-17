@@ -123,7 +123,7 @@ export default function EmergencyCard({ profile, onEdit, offCardAllergies = [], 
                   ? '1 allergy in your record is not on this card.'
                   : `${offCardAllergies.length} allergies in your record are not on this card.`}
               </Text>
-              {onReviewAllergies ? <Feather name="chevron-right" size={16} color="#64748B" /> : null}
+              {onReviewAllergies ? <Feather name="chevron-right" size={16} color="#5D6C82" /> : null}
             </Pressable>
           ) : null}
         </View>

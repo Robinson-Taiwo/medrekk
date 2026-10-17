@@ -46,7 +46,7 @@ export default function WorkerHome() {
         ) : (
           <Card className="items-center gap-3 px-5 py-7">
             <View className="h-14 w-14 items-center justify-center rounded-2xl bg-fill">
-              <Feather name="search" size={22} color="#64748B" />
+              <Feather name="search" size={22} color="#5D6C82" />
             </View>
             <Text className="text-[17px] font-semibold text-ink">No patient yet</Text>
             <Text className="max-w-[280px] text-center text-sm leading-5 text-muted">
@@ -69,7 +69,7 @@ export default function WorkerHome() {
                 className={`h-[38px] w-[38px] items-center justify-center rounded-[10px] ${
                   model.state === 'READY' ? 'bg-primary-soft' : 'bg-fill'
                 }`}>
-                <Feather name="cpu" size={18} color={model.state === 'READY' ? '#0F6E56' : '#64748B'} />
+                <Feather name="cpu" size={18} color={model.state === 'READY' ? '#0F6E56' : '#5D6C82'} />
               </View>
               <View className="flex-1 gap-0.5">
                 <Text className="text-sm font-medium text-ink">
@@ -81,7 +81,7 @@ export default function WorkerHome() {
                     : 'Without it, notes are structured by simple rules'}
                 </Meta>
               </View>
-              <Feather name="chevron-right" size={18} color="#64748B" />
+              <Feather name="chevron-right" size={18} color="#5D6C82" />
             </Card>
           </Pressable>
         </View>
