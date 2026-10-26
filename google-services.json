@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "1068941842636",
+    "project_id": "medrekk-cace4",
+    "storage_bucket": "medrekk-cace4.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1068941842636:android:227aea0b77ada4d0e50a69",
+        "android_client_info": {
+          "package_name": "com.taiwo101.medrekk"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCxnFTDgH_1GKV-ZqiiWhlAbnxkV0YKEPc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1068941842636:android:0ed51a93fba8ec12e50a69",
+        "android_client_info": {
+          "package_name": "medrekk.com"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCxnFTDgH_1GKV-ZqiiWhlAbnxkV0YKEPc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

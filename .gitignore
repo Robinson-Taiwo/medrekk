@@ -44,9 +44,12 @@ example
 .env
 
 # Firebase. The service account key is a private key with admin rights on the project and
-# must never be committed — it belongs in EAS credentials, not in the repo. google-services.json
-# is not secret in the same way (it ships inside the APK) but is per-project config, so it is
-# supplied at build time rather than tracked here.
+# must never be committed — it belongs in EAS credentials, not in the repo.
+#
+# google-services.json IS tracked, deliberately. It holds no private key: the api_key in it is
+# a client key scoped to the package name and signing certificate, and the whole file ships
+# inside every APK, so it is readable by anyone holding the build. It has to be tracked because
+# EAS Build uploads only the files git knows about — ignoring it fails the build with
+# "google-services.json is missing" at the Google Services gradle step.
 *firebase-adminsdk*.json
-google-services.json
 GoogleService-Info.plist
