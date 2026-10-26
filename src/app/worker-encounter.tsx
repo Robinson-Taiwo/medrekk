@@ -432,16 +432,15 @@ export default function WorkerEncounterScreen() {
             {/* An empty bordered box used to be drawn here when nothing was found, which read
                 as the screen having broken rather than as a real and ordinary answer. */}
             {items.length === 0 ? (
-              <View className="items-center gap-2 rounded-xl border border-line bg-surface px-5 py-7">
-                <View className="h-12 w-12 items-center justify-center rounded-2xl bg-fill">
-                  <Feather name="search" size={20} color={C.muted} />
-                </View>
-                <Text className="text-[15px] font-semibold text-ink">Nothing was found to record</Text>
-                <Text className="max-w-[280px] text-center text-sm leading-5 text-muted">
-                  Not every note contains something for the record. Add an item yourself below, or go back and
-                  capture more.
-                </Text>
-              </View>
+              <Empty
+                icon="search"
+                title="Nothing was found to record"
+                body="Not every note contains something for the record, and that is a real answer rather than a failure."
+                hints={[
+                  { icon: 'plus', label: 'Add an item yourself below' },
+                  { icon: 'rotate-ccw', label: 'Or go back and capture more detail' },
+                ]}
+              />
             ) : (
             <View className="gap-4 rounded-xl border border-line bg-surface p-3.5">
               {GROUP_ORDER.filter((category) => items.some((i) => i.category === category)).map((category) => (

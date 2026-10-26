@@ -78,11 +78,25 @@ function TabBar({ state, navigation, tabs }: TabBarProps) {
   const insets = useSafeAreaInsets();
 
   return (
-    /* Dark, because it is part of the frame rather than part of the record. The sheet above
-       it has a rounded foot, so the bar reads as the surface the record is resting on. */
-    <View
-      className="flex-row items-start justify-around bg-night px-2.5 pt-2.5"
-      style={{ paddingBottom: Math.max(insets.bottom, 10) }}>
+    /*
+     * A floating bar rather than a strip welded to the bottom edge.
+     *
+     * Edge-to-edge, it read as the end of the screen — a place where content ran out. Lifted
+     * clear with the sheet visible underneath, it reads as a control resting on the page,
+     * which is what it is. The inset top highlight is the same trick the panels use: depth
+     * from a one-pixel line rather than from a shadow, which stays crisp at any density.
+     */
+    <View className="bg-night px-3 pt-2" style={{ paddingBottom: Math.max(insets.bottom, 12) }}>
+      <View
+        className="flex-row items-center justify-around rounded-[22px] border border-white/[0.08] px-1.5 py-2"
+        style={{
+          backgroundColor: 'rgba(255,255,255,0.045)',
+          shadowColor: '#000',
+          shadowOpacity: 0.3,
+          shadowRadius: 18,
+          shadowOffset: { width: 0, height: 8 },
+          elevation: 8,
+        }}>
       {state.routes.map((route, index) => {
         const tab = tabs.find((t) => t.name === route.name);
         if (!tab) return null;
@@ -101,21 +115,26 @@ function TabBar({ state, navigation, tabs }: TabBarProps) {
             accessibilityRole="button"
             accessibilityState={{ selected: focused }}
             accessibilityLabel={tab.label}
-            className="w-[64px] items-center gap-1">
+            className="flex-1 items-center gap-[3px] py-0.5">
             <View
-              className="h-8 w-14 items-center justify-center rounded-[12px]"
-              style={focused ? { backgroundColor: 'rgba(47,190,143,0.16)' } : undefined}>
-              <Feather name={tab.icon} size={21} color={focused ? C.glow : C.mistFaint} />
+              className="h-7 w-[52px] items-center justify-center rounded-full"
+              style={focused ? { backgroundColor: 'rgba(47,190,143,0.18)' } : undefined}>
+              <Feather name={tab.icon} size={19} color={focused ? C.glow : C.mistFaint} />
             </View>
             <Text
               numberOfLines={1}
-              className="text-[10.5px]"
-              style={{ color: focused ? C.glow : C.mistFaint, fontWeight: focused ? '600' : '500' }}>
+              className="text-[10px]"
+              style={{
+                color: focused ? C.glow : C.mistFaint,
+                fontWeight: focused ? '700' : '500',
+                letterSpacing: 0.1,
+              }}>
               {tab.label}
             </Text>
           </Pressable>
         );
       })}
+      </View>
     </View>
   );
 }

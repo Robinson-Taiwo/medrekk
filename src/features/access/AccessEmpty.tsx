@@ -1,6 +1,8 @@
 import Feather from '@expo/vector-icons/Feather';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { C } from '@/components/design/tokens';
+import { Empty } from '@/components/design/split';
+import { BottomTabInset } from '@/constants/theme';
 
 interface RowProps {
   icon: keyof typeof Feather.glyphMap;
@@ -26,15 +28,6 @@ function ControlRow({ icon, title, body, value, onPress }: RowProps) {
   );
 }
 
-function EmptyRow({ icon, label }: { icon: keyof typeof Feather.glyphMap; label: string }) {
-  return (
-    <View className="flex-row items-center gap-2.5 rounded-xl border border-dashed border-line px-3.5 py-3.5">
-      <Feather name={icon} size={16} color={C.muted} />
-      <Text className="text-sm text-muted">{label}</Text>
-    </View>
-  );
-}
-
 interface Props {
   onShowCode: () => void;
   onHowItWorks: () => void;
@@ -51,61 +44,55 @@ export default function AccessEmpty({
   historyValue,
 }: Props) {
   return (
-    <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 110, gap: 18 }}>
-      <View className="gap-1">
-        <Text className="text-[28px] font-semibold tracking-tight text-ink">Access</Text>
-        <Text className="text-sm text-muted">You decide who sees your record, and for how long.</Text>
-      </View>
+    <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: BottomTabInset + 24, gap: 16 }}>
+      {/*
+        One statement of the fact, not three.
+        
+        This screen used to say "your record is private", then "no pending requests", then "no
+        active sessions" — the same absence, worded three ways, which reads as a system with
+        three broken parts rather than one working guarantee. The page header is gone too: the
+        screen's chrome already carries it.
+      */}
+      <Empty
+        icon="lock"
+        title="Your record is private"
+        body="Nobody has access, and nobody is asking. This is where that changes, and only with your say-so."
+        hints={[
+          { icon: 'user-check', label: 'A request shows who is asking, where they work and why' },
+          { icon: 'sliders', label: 'You can approve part of what they asked for' },
+          { icon: 'clock', label: 'Access ends on its own, and you can end it sooner' },
+        ]}
+      />
 
-      <View className="items-center gap-3 rounded-2xl border border-line bg-surface px-5 py-6">
-        <View className="h-14 w-14 items-center justify-center rounded-full bg-primary-soft">
-          <Feather name="lock" size={22} color={C.primary} />
-        </View>
-        <Text className="text-xl font-semibold text-ink">Your record is private</Text>
-        <Text className="max-w-[300px] text-center text-sm leading-[21px] text-muted">
-          No one has access right now. Requests from health workers will appear here, and nothing is shared until you
-          approve.
-        </Text>
-        <View className="w-full flex-row gap-2.5 pt-1">
-          <Pressable
-            onPress={onShowCode}
-            className="h-12 flex-1 flex-row items-center justify-center gap-2 rounded-xl bg-primary">
-            <Feather name="grid" size={16} color={C.surface} />
-            <Text className="text-[15px] font-medium text-white">Show my code</Text>
-          </Pressable>
-          <Pressable
-            onPress={onHowItWorks}
-            className="h-12 flex-1 flex-row items-center justify-center gap-2 rounded-xl border border-line bg-surface">
-            <Feather name="info" size={16} color={C.ink} />
-            <Text className="text-[15px] font-medium text-ink">How it works</Text>
-          </Pressable>
-        </View>
-      </View>
-
-      <View className="gap-2">
-        <Text className="text-[11px] font-medium uppercase tracking-wider text-muted">Requests</Text>
-        <EmptyRow icon="bell" label="No pending requests" />
-      </View>
-
-      <View className="gap-2">
-        <Text className="text-[11px] font-medium uppercase tracking-wider text-muted">Active access</Text>
-        <EmptyRow icon="shield" label="No active sessions" />
+      <View className="flex-row gap-2.5">
+        <Pressable
+          onPress={onShowCode}
+          className="h-12 flex-1 flex-row items-center justify-center gap-2 rounded-xl bg-primary">
+          <Feather name="grid" size={16} color={C.surface} />
+          <Text className="text-[15px] font-medium text-white">Show my code</Text>
+        </Pressable>
+        <Pressable
+          onPress={onHowItWorks}
+          className="h-12 flex-1 flex-row items-center justify-center gap-2 rounded-xl border border-line bg-surface">
+          <Feather name="info" size={16} color={C.ink} />
+          <Text className="text-[15px] font-medium text-ink">How it works</Text>
+        </Pressable>
       </View>
 
       <View className="gap-2">
-        <Text className="text-[11px] font-medium uppercase tracking-wider text-muted">Your controls</Text>
+        <Text className="text-[11px] font-bold uppercase tracking-[1.2px] text-muted">Your controls</Text>
         <View className="divide-y divide-line overflow-hidden rounded-xl border border-line bg-surface">
           <ControlRow
             icon="grid"
             title="Emergency card"
-            body="Visible to anyone who scans your QR"
+            body="Readable by a responder without your approval"
             value="On"
             onPress={onEmergencyCard}
           />
           <ControlRow
             icon="file-text"
             title="Access history"
-            body="Every view is logged"
+            body="Every view is written down"
             value={historyValue}
             onPress={onHistory}
           />

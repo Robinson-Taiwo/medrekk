@@ -287,31 +287,65 @@ export function Callout({
   );
 }
 
-/** Nothing here yet, said in a way that explains rather than apologises. */
+/**
+ * Nothing here yet — which is a state worth designing, not an absence to apologise for.
+ *
+ * An empty screen is the first thing most people see, and the version that says only "no
+ * items" teaches them nothing and leaves them nowhere to go. Each of these says what the
+ * screen is for, what will fill it, and offers the one thing worth doing now. `hints` carry
+ * the detail that would otherwise bloat the sentence.
+ */
 export function Empty({
   icon = 'inbox',
   title,
   body,
+  hints,
   action,
   onAction,
+  secondary,
+  onSecondary,
 }: {
   icon?: keyof typeof Feather.glyphMap;
   title: string;
   body: string;
+  /** Concrete things that will appear here, or ways to fill it. Three at most. */
+  hints?: { icon: keyof typeof Feather.glyphMap; label: string }[];
   action?: string;
   onAction?: () => void;
+  secondary?: string;
+  onSecondary?: () => void;
 }) {
   return (
-    <View className="items-center gap-2.5 rounded-2xl border border-line bg-surface px-6 py-9">
-      <View className="h-12 w-12 items-center justify-center rounded-2xl bg-fill">
-        <Feather name={icon} size={20} color={C.muted} />
+    <View className="overflow-hidden rounded-2xl border border-line bg-surface">
+      <View className="items-center gap-2.5 px-6 pb-6 pt-8">
+        {/* A tinted disc rather than a grey one: an empty record is a normal state, not a fault. */}
+        <View className="h-14 w-14 items-center justify-center rounded-2xl bg-primary-soft">
+          <Feather name={icon} size={22} color={C.primary} />
+        </View>
+        <Text className="text-[17px] font-semibold tracking-tight text-ink">{title}</Text>
+        <Text className="max-w-[300px] text-center text-[13px] leading-[19px] text-muted">{body}</Text>
+
+        {action && onAction ? (
+          <Pressable onPress={onAction} className="mt-2 h-11 justify-center rounded-xl bg-primary px-5">
+            <Text className="text-[15px] font-medium text-white">{action}</Text>
+          </Pressable>
+        ) : null}
+        {secondary && onSecondary ? (
+          <Pressable onPress={onSecondary} hitSlop={8} className="pt-1">
+            <Text className="text-[13px] font-medium text-primary">{secondary}</Text>
+          </Pressable>
+        ) : null}
       </View>
-      <Text className="text-[16px] font-semibold tracking-tight text-ink">{title}</Text>
-      <Text className="text-center text-[13px] leading-[19px] text-muted">{body}</Text>
-      {action && onAction ? (
-        <Pressable onPress={onAction} className="mt-1 h-10 justify-center rounded-xl bg-primary px-4">
-          <Text className="text-[14px] font-medium text-white">{action}</Text>
-        </Pressable>
+
+      {hints && hints.length > 0 ? (
+        <View className="gap-2.5 border-t border-line bg-fill px-5 py-4">
+          {hints.map((h) => (
+            <View key={h.label} className="flex-row items-center gap-2.5">
+              <Feather name={h.icon} size={14} color={C.muted} />
+              <Text className="flex-1 text-[12.5px] leading-[18px] text-muted">{h.label}</Text>
+            </View>
+          ))}
+        </View>
       ) : null}
     </View>
   );

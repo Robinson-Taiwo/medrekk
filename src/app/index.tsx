@@ -340,7 +340,12 @@ export default function Index() {
             <Empty
               icon="lock"
               title="Your record is private"
-              body="Nobody can see it. When a health worker asks, the request arrives here, and nothing is shared until you approve it."
+              body="Nobody can see it right now. When a health worker asks, the request arrives here and nothing is shared until you say yes."
+              hints={[
+                { icon: 'user-check', label: 'You will see who is asking, where they work and why' },
+                { icon: 'sliders', label: 'You can approve less than they asked for' },
+                { icon: 'clock', label: 'Access ends by itself, and you can end it sooner' },
+              ]}
             />
           ) : (
             active.map((session) => (
@@ -377,9 +382,14 @@ export default function Index() {
           {claims.length === 0 ? (
             <Empty
               icon="plus-circle"
-              title="Nothing recorded yet"
-              body="A health worker adds to this after a visit. You can photograph a prescription or a result yourself too — it stays self-reported until someone confirms it."
-              action="Add something"
+              title="Your record is empty"
+              body="It fills up as you use it — by you, and by any health worker you let in."
+              hints={[
+                { icon: 'camera', label: 'Photograph a prescription or a printed result' },
+                { icon: 'mic', label: 'Say an allergy out loud instead of typing it' },
+                { icon: 'file-text', label: 'A visit a health worker records lands here too' },
+              ]}
+              action="Add your first entry"
               onAction={() => router.push('/patient/me')}
             />
           ) : (

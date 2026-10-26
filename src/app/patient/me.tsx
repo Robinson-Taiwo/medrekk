@@ -201,15 +201,26 @@ function RecordScreen({ onOpenReferrals }: { onOpenReferrals: () => void }) {
         ) : grouped.length === 0 ? (
           <View className="px-5 pt-5">
             <Empty
-              icon="file-text"
-              title={filter === 'ALL' ? 'Nothing recorded yet' : 'Nothing in this category'}
+              icon={filter === 'ALL' ? 'file-text' : 'filter'}
+              title={filter === 'ALL' ? 'Your record is empty' : 'Nothing in this category'}
               body={
                 filter === 'ALL'
-                  ? 'Type an allergy, photograph a prescription, or let a health worker record a visit for you.'
-                  : 'Try another filter, or add something yourself.'
+                  ? 'Everything here belongs to you, and every entry says how it got here.'
+                  : 'Nothing has been recorded under this yet. Try another filter, or add it yourself.'
               }
-              action={filter === 'ALL' ? 'Add something' : undefined}
-              onAction={filter === 'ALL' ? () => setAdding(true) : undefined}
+              hints={
+                filter === 'ALL'
+                  ? [
+                      { icon: 'camera', label: 'Photograph a prescription — the text is read on this phone' },
+                      { icon: 'mic', label: 'Speak it, if typing is awkward' },
+                      { icon: 'shield', label: 'What you add stays self-reported until a clinician confirms it' },
+                    ]
+                  : undefined
+              }
+              action="Add an entry"
+              onAction={() => setAdding(true)}
+              secondary={filter === 'ALL' ? undefined : 'Show everything'}
+              onSecondary={filter === 'ALL' ? undefined : () => setFilter('ALL')}
             />
           </View>
         ) : (

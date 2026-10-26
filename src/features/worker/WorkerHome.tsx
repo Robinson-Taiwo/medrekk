@@ -71,7 +71,12 @@ export default function WorkerHome() {
           <Empty
             icon="search"
             title="No patient yet"
-            body="Find a patient by their MedRekk code and name. They approve on their own phone before you can record anything."
+            body="Start by finding one. They approve on their own phone before you can see or record anything."
+            hints={[
+              { icon: 'key', label: 'You need their MedRekk code and the name on the record' },
+              { icon: 'edit-3', label: 'Once approved, record a visit by typing, speaking or photographing' },
+              { icon: 'wifi-off', label: 'A visit recorded with no signal is kept and sent later' },
+            ]}
             action="Find a patient"
             onAction={() => router.push('/worker-patient')}
           />
