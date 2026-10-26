@@ -43,10 +43,16 @@ export const STANDING: Record<Standing, { label: string; line: string; text: str
  * Frame
  * ---------------------------------------------------------------- */
 
-/** The dark base every Split screen sits on. The sheet covers most of it. */
-export function Screen({ children }: { children: ReactNode }) {
+/**
+ * The dark base every Split screen sits on. The sheet covers most of it.
+ *
+ * `topInset={false}` when something above has already claimed the status-bar space — the
+ * offline banner does, and without this the two of them each add it and the screen starts a
+ * notch too low.
+ */
+export function Screen({ children, topInset = true }: { children: ReactNode; topInset?: boolean }) {
   return (
-    <SafeAreaView className="flex-1 bg-night" edges={['top', 'left', 'right']}>
+    <SafeAreaView className="flex-1 bg-night" edges={topInset ? ['top', 'left', 'right'] : ['left', 'right']}>
       {children}
     </SafeAreaView>
   );

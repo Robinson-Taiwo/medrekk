@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useFocusEffect } from "expo-router";
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
 
@@ -161,6 +161,15 @@ function FilterRow<T extends string>({
 export default function HistoryScreen() {
   const [items, setItems] = useState<AuditEntry[] | null>(null);
   const [cursor, setCursor] = useState<string | undefined>(undefined);
+  /**
+   * The in-flight guard has to be a ref, not state.
+   *
+   * Two taps, or a scroll that fires onEndReached twice in one tick, both read `loadingMore`
+   * before React had re-rendered with it set — so both fetched the same cursor and appended
+   * the same page twice. That is where "two children with the same key" came from. A ref is
+   * written synchronously, so the second caller sees it immediately.
+   */
+  const inFlight = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -188,6 +197,7 @@ export default function HistoryScreen() {
   const load = useCallback(async () => {
     try {
       const page = asPage(await api<AuditPage | AuditEntry[]>(query()));
+      inFlight.current = false;
       setItems(page.items);
       setCursor(page.nextCursor);
       setError(null);
@@ -197,19 +207,26 @@ export default function HistoryScreen() {
   }, [query]);
 
   const loadMore = useCallback(async () => {
-    if (!cursor || loadingMore) return;
+    if (!cursor || inFlight.current) return;
+    inFlight.current = true;
     setLoadingMore(true);
     try {
       const page = asPage(await api<AuditPage | AuditEntry[]>(query(`cursor=${encodeURIComponent(cursor)}`)));
-      // Appended rather than merged: the cursor guarantees these follow what is already held.
-      setItems((prev) => [...(prev ?? []), ...page.items]);
+      // Deduplicated on the way in as well. The cursor should make this impossible, but an
+      // access log is the last place to show somebody the same event twice, so it is checked
+      // rather than assumed.
+      setItems((prev) => {
+        const held = new Set((prev ?? []).map((e) => e.id));
+        return [...(prev ?? []), ...page.items.filter((e) => !held.has(e.id))];
+      });
       setCursor(page.nextCursor);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not load more.");
     } finally {
+      inFlight.current = false;
       setLoadingMore(false);
     }
-  }, [cursor, loadingMore, query]);
+  }, [cursor, query]);
 
   useFocusEffect(
     useCallback(() => {
@@ -269,21 +286,36 @@ export default function HistoryScreen() {
               </Text>
             }
             renderItem={({ item }) => <Entry item={item} />}
-            onEndReachedThreshold={0.4}
-            onEndReached={() => void loadMore()}
+            /*
+              Loaded on a tap rather than on scroll.
+              
+              Auto-loading at the end of the list made paging invisible — rows simply kept
+              appearing, so there was nothing to see and no way to tell how much of the log you
+              were actually looking at. It was also what fired twice in one tick and appended a
+              page you already had. A count and a button say both things plainly.
+            */
             ListFooterComponent={
-              cursor ? (
-                <Pressable
-                  onPress={() => void loadMore()}
-                  disabled={loadingMore}
-                  className="h-11 items-center justify-center rounded-xl border border-line bg-surface">
-                  <Text className="text-[14px] font-medium text-primary">
-                    {loadingMore ? 'Loading…' : 'Load older entries'}
+              items.length === 0 ? null : (
+                <View className="gap-2.5 pt-1">
+                  <Text className="text-center text-[12px] text-muted">
+                    {cursor
+                      ? `Showing the ${items.length} most recent`
+                      : `${items.length} ${items.length === 1 ? 'entry' : 'entries'} — that is the whole history`}
                   </Text>
-                </Pressable>
-              ) : items.length > 0 ? (
-                <Text className="py-2 text-center text-[12px] text-muted">That is the whole history.</Text>
-              ) : null
+                  {cursor ? (
+                    <Pressable
+                      onPress={() => void loadMore()}
+                      disabled={loadingMore}
+                      className={`h-11 items-center justify-center rounded-xl border border-line bg-surface ${
+                        loadingMore ? 'opacity-60' : ''
+                      }`}>
+                      <Text className="text-[14px] font-medium text-primary">
+                        {loadingMore ? 'Loading…' : `Load ${PAGE} older`}
+                      </Text>
+                    </Pressable>
+                  ) : null}
+                </View>
+              )
             }
           />
         )}

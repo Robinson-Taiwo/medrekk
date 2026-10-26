@@ -3,6 +3,8 @@ import { useRouter } from 'expo-router';
 import { Alert, FlatList, Pressable, ScrollView, Text, View } from 'react-native';
 
 import type { ActiveAccessSession, PendingAccessRequest } from '@/features/access/accessApi';
+import Feather from '@expo/vector-icons/Feather';
+import { C } from '@/components/design/tokens';
 import { useAccessRequests } from '@/features/access/useAccessRequests';
 import { Chrome, ChromeTag, Empty, Heading, Screen, Sheet } from '@/components/design/split';
 import { BottomTabInset } from '@/constants/theme';
@@ -225,12 +227,33 @@ function ActiveCard({ item, onEnd }: { item: ActiveAccessSession; onEnd: (id: st
           <Text className="text-[13px] font-medium text-ink">{busy ? 'Ending…' : 'End access'}</Text>
         </Pressable>
       </View>
-      <View className="flex-row items-center justify-between">
-        <Meta>{scopes.map((s) => LABELS[s] ?? s).join(' · ')}</Meta>
+      {/*
+        The expiry gets its own line.
+        
+        It used to sit beside the scope list in a justify-between row. With seven scopes the
+        list wrapped to two lines, took the full width on its own terms, and pushed "until
+        11:48" clean off the right edge of the screen — the one fact on this card a patient is
+        most likely to be looking for.
+      */}
+      <View className="gap-2 border-t border-line pt-3">
+        <View className="flex-row flex-wrap gap-1.5">
+          {scopes.map((scope) => (
+            <View key={scope} className="rounded-lg bg-fill px-2 py-1">
+              <Text className="text-[11.5px] text-muted">{LABELS[scope] ?? scope}</Text>
+            </View>
+          ))}
+        </View>
         {item.grantedUntil ? (
-          <Text className="text-xs font-medium text-ink">
-            until {new Date(item.grantedUntil).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-          </Text>
+          <View className="flex-row items-center gap-1.5">
+            <Feather name="clock" size={13} color={C.muted} />
+            <Text className="text-[12px] text-muted">
+              Ends at{' '}
+              <Text className="font-semibold text-ink">
+                {new Date(item.grantedUntil).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </Text>
+              , or whenever you end it
+            </Text>
+          </View>
         ) : null}
       </View>
     </Card>

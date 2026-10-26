@@ -86,21 +86,22 @@ export default function EmergencyProfileScreen() {
     );
   }
 
-  const card = (
+  const card = (banner: boolean) => (
     <EmergencyCard
       profile={profile}
       onEdit={() => setEditing(true)}
       offCardAllergies={offCard}
       onReviewAllergies={() => router.navigate("/record")}
+      topInset={!banner}
     />
   );
 
-  if (!offlineSavedAt) return card;
+  if (!offlineSavedAt) return card(false);
 
   return (
     <View className="flex-1 bg-night">
       <OfflineBanner savedAt={offlineSavedAt} />
-      {card}
+      {card(true)}
     </View>
   );
 }

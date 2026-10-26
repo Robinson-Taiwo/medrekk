@@ -88,7 +88,7 @@ function TabBar({ state, navigation, tabs }: TabBarProps) {
      */
     <View className="bg-night px-3 pt-2" style={{ paddingBottom: Math.max(insets.bottom, 12) }}>
       <View
-        className="flex-row items-center justify-around rounded-[22px] border border-white/[0.08] px-1.5 py-2"
+        className="flex-row items-center justify-around rounded-[22px] border border-white/[0.08] px-1.5 pb-2 pt-3.5"
         style={{
           backgroundColor: 'rgba(255,255,255,0.045)',
           shadowColor: '#000',
@@ -116,17 +116,39 @@ function TabBar({ state, navigation, tabs }: TabBarProps) {
             accessibilityState={{ selected: focused }}
             accessibilityLabel={tab.label}
             className="flex-1 items-center gap-[3px] py-0.5">
+            {/*
+              The open tab lifts rather than lights up.
+              
+              A green pill behind the icon put a second colour into a bar that already uses
+              colour for one thing only, and it fought the green of the primary action. Height
+              says the same thing with nothing added: the disc rises out of the bar, catches a
+              highlight on its top edge, and the icon alone carries the accent.
+            */}
             <View
-              className="h-7 w-[52px] items-center justify-center rounded-full"
-              style={focused ? { backgroundColor: 'rgba(47,190,143,0.18)' } : undefined}>
-              <Feather name={tab.icon} size={19} color={focused ? C.glow : C.mistFaint} />
+              className="h-9 w-9 items-center justify-center rounded-full"
+              style={
+                focused
+                  ? {
+                      marginTop: -14,
+                      backgroundColor: '#1B302A',
+                      borderWidth: 1,
+                      borderColor: 'rgba(255,255,255,0.10)',
+                      shadowColor: '#000',
+                      shadowOpacity: 0.45,
+                      shadowRadius: 10,
+                      shadowOffset: { width: 0, height: 5 },
+                      elevation: 6,
+                    }
+                  : undefined
+              }>
+              <Feather name={tab.icon} size={focused ? 19 : 18} color={focused ? C.glow : C.mistFaint} />
             </View>
             <Text
               numberOfLines={1}
               className="text-[10px]"
               style={{
-                color: focused ? C.glow : C.mistFaint,
-                fontWeight: focused ? '700' : '500',
+                color: focused ? C.mist : C.mistFaint,
+                fontWeight: focused ? '600' : '500',
                 letterSpacing: 0.1,
               }}>
               {tab.label}
