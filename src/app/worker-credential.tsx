@@ -11,6 +11,8 @@ import { submitCredential, LICENCE_BODIES, type LicenceBody } from '@/features/a
 import { loadToken } from '@/services/session';
 import { Card, Meta } from '@/components/design/primitives';
 import { BottomTabInset } from '@/constants/theme';
+import { Chrome, Note, Screen, Sheet } from '@/components/design/split';
+import { C } from '@/components/design/tokens';
 
 /**
  * The register, in the words the licence itself uses. Named rather than typed freely so the
@@ -110,10 +112,11 @@ export default function WorkerCredential() {
 
   if (done) {
     return (
-      <SafeAreaView className="flex-1 bg-canvas" edges={['top', 'left', 'right']}>
-        <View className="flex-1 items-center justify-center gap-3 px-8">
+      <Screen>
+        <Chrome title="Your licence" onBack={() => router.back()} />
+        <View className="flex-1 items-center justify-center gap-3 bg-canvas px-8">
           <View className="h-14 w-14 items-center justify-center rounded-2xl bg-primary-soft">
-            <Feather name="check" size={24} color="#0F6E56" />
+            <Feather name="check" size={24} color={C.primary} />
           </View>
           <Text className="text-[17px] font-semibold text-ink">Sent for review</Text>
           <Text className="text-center text-sm leading-5 text-muted">
@@ -124,27 +127,26 @@ export default function WorkerCredential() {
             <Text className="text-[15px] font-medium text-white">Done</Text>
           </Pressable>
         </View>
-      </SafeAreaView>
+      </Screen>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-canvas" edges={['top', 'left', 'right']}>
-      <ScrollView
-        contentContainerStyle={{ padding: 20, paddingBottom: BottomTabInset + 24, gap: 14 }}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}>
-        <View className="gap-1">
-          <Text className="text-2xl font-semibold tracking-tight text-ink">Your licence</Text>
-          <Meta>
-            You can already find a patient and record a visit. This is what lets you confirm something already in a
-            record — the difference between a note you took and you vouching for it.
-          </Meta>
-        </View>
+    <Screen>
+      <Chrome
+        title="Your licence"
+        subtitle="So somebody can check you are who you say"
+        onBack={() => router.back()}
+      />
+      <Sheet>
+        <Note>
+          You can already find a patient and record a visit. This is what lets you confirm something already in a
+          record — the difference between a note you took and you vouching for it.
+        </Note>
 
         {approved ? (
           <Card className="flex-row items-start gap-3 p-3.5">
-            <Feather name="alert-triangle" size={17} color="#B45309" />
+            <Feather name="alert-triangle" size={17} color={C.warn} />
             <Text className="flex-1 text-[13px] leading-5 text-ink">
               Your credential is approved. Sending a different licence puts you back to pending, because an approval
               refers to the document it was given.
@@ -187,7 +189,7 @@ export default function WorkerCredential() {
           <TextInput
             className="rounded-xl border border-line bg-surface px-4 py-3.5 text-base text-ink"
             placeholder="As printed on your licence"
-            placeholderTextColor="#7C8A9C"
+            placeholderTextColor={C.hint}
             value={number}
             onChangeText={setNumber}
             autoCapitalize="characters"
@@ -199,7 +201,7 @@ export default function WorkerCredential() {
           <TextInput
             className="rounded-xl border border-line bg-surface px-4 py-3.5 text-base text-ink"
             placeholder="e.g. Medical officer, Registered nurse"
-            placeholderTextColor="#7C8A9C"
+            placeholderTextColor={C.hint}
             value={profession}
             onChangeText={setProfession}
           />
@@ -215,21 +217,21 @@ export default function WorkerCredential() {
               onPress={() => void pick('CAMERA')}
               disabled={working}
               className="h-10 flex-1 flex-row items-center justify-center gap-2 rounded-xl bg-primary-soft">
-              <Feather name="camera" size={15} color="#0F6E56" />
+              <Feather name="camera" size={15} color={C.primary} />
               <Text className="text-[13px] font-medium text-primary">Take a photo</Text>
             </Pressable>
             <Pressable
               onPress={() => void pick('LIBRARY')}
               disabled={working}
               className="h-10 flex-1 flex-row items-center justify-center gap-2 rounded-xl bg-fill">
-              <Feather name="image" size={15} color="#5D6C82" />
+              <Feather name="image" size={15} color={C.muted} />
               <Text className="text-[13px] font-medium text-ink">From photos</Text>
             </Pressable>
           </View>
 
           {working ? (
             <View className="flex-row items-center gap-2">
-              <ActivityIndicator size="small" color="#0F6E56" />
+              <ActivityIndicator size="small" color={C.primary} />
               <Text className="text-[13px] text-muted">Reading the photo…</Text>
             </View>
           ) : null}
@@ -239,7 +241,7 @@ export default function WorkerCredential() {
               <Image source={{ uri: image.uri }} className="h-12 w-12 rounded-lg" resizeMode="cover" />
               <Text className="flex-1 text-[13px] font-medium text-ink">Ready to send</Text>
               <Pressable onPress={() => setImage(null)} hitSlop={8}>
-                <Feather name="trash-2" size={16} color="#5D6C82" />
+                <Feather name="trash-2" size={16} color={C.muted} />
               </Pressable>
             </View>
           ) : existing?.documentId ? (
@@ -262,7 +264,7 @@ export default function WorkerCredential() {
           Nothing here is checked automatically. A person compares your number against the register and looks at the
           photo, which is why both matter.
         </Meta>
-      </ScrollView>
-    </SafeAreaView>
+      </Sheet>
+    </Screen>
   );
 }

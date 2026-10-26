@@ -8,6 +8,7 @@ import { Meta } from '@/components/design/primitives';
 import { captureFromCamera, captureFromLibrary, type PhotoText } from '@/features/ai/photo';
 import { useVoiceCapture, voiceAvailable } from '@/features/ai/useVoiceCapture';
 import { useWhisperStatus } from '@/features/ai/whisperStore';
+import { C } from '@/components/design/tokens';
 
 export type AddCategory = 'ALLERGIES' | 'CURRENT_MEDICATIONS' | 'PAST_MEDICAL_HISTORY';
 
@@ -170,7 +171,7 @@ export default function AddEntrySheet({
           <View className="flex-row items-center justify-between">
             <Text className="text-lg font-semibold text-ink">Add to your record</Text>
             <Pressable onPress={onClose} hitSlop={8}>
-              <Feather name="x" size={20} color="#5D6C82" />
+              <Feather name="x" size={20} color={C.muted} />
             </Pressable>
           </View>
 
@@ -203,7 +204,7 @@ export default function AddEntrySheet({
                       className={`h-10 flex-1 flex-row items-center justify-center gap-1.5 rounded-xl border ${
                         active ? 'border-primary bg-primary-soft' : 'border-line bg-surface'
                       }`}>
-                      <Feather name={m.icon} size={14} color={active ? '#0F6E56' : '#5D6C82'} />
+                      <Feather name={m.icon} size={14} color={active ? C.primary : C.muted} />
                       <Text className={`text-[13px] ${active ? 'font-medium text-primary' : 'text-muted'}`}>
                         {m.label}
                       </Text>
@@ -223,14 +224,14 @@ export default function AddEntrySheet({
                       onPress={() => void readPhoto('CAMERA')}
                       disabled={working !== null}
                       className="h-10 flex-1 flex-row items-center justify-center gap-2 rounded-xl bg-primary-soft">
-                      <Feather name="camera" size={15} color="#0F6E56" />
+                      <Feather name="camera" size={15} color={C.primary} />
                       <Text className="text-[13px] font-medium text-primary">Take a photo</Text>
                     </Pressable>
                     <Pressable
                       onPress={() => void readPhoto('LIBRARY')}
                       disabled={working !== null}
                       className="h-10 flex-1 flex-row items-center justify-center gap-2 rounded-xl bg-fill">
-                      <Feather name="image" size={15} color="#5D6C82" />
+                      <Feather name="image" size={15} color={C.muted} />
                       <Text className="text-[13px] font-medium text-ink">From photos</Text>
                     </Pressable>
                   </View>
@@ -247,7 +248,7 @@ export default function AddEntrySheet({
                         </Meta>
                       </View>
                       <Pressable onPress={() => setPhoto(null)} hitSlop={8}>
-                        <Feather name="trash-2" size={16} color="#5D6C82" />
+                        <Feather name="trash-2" size={16} color={C.muted} />
                       </Pressable>
                     </View>
                   ) : null}
@@ -276,7 +277,7 @@ export default function AddEntrySheet({
                         <Feather
                           name={recording ? 'square' : 'mic'}
                           size={15}
-                          color={recording ? '#CE2B2B' : '#0F6E56'}
+                          color={recording ? C.danger : C.primary}
                         />
                         <Text
                           className={`text-[13px] font-medium ${recording ? 'text-danger' : 'text-primary'}`}>
@@ -296,7 +297,7 @@ export default function AddEntrySheet({
 
               {working ? (
                 <View className="flex-row items-center gap-2">
-                  <ActivityIndicator size="small" color="#0F6E56" />
+                  <ActivityIndicator size="small" color={C.primary} />
                   <Text className="text-[13px] text-muted">{working}</Text>
                 </View>
               ) : null}
@@ -304,7 +305,7 @@ export default function AddEntrySheet({
               <TextInput
                 className="min-h-[52px] rounded-xl border border-line bg-surface px-4 py-3.5 text-base text-ink"
                 placeholder={mode === 'TYPE' ? 'e.g. Penicillin' : 'What was read goes here — edit it down'}
-                placeholderTextColor="#7C8A9C"
+                placeholderTextColor={C.hint}
                 value={value}
                 onChangeText={(t) => setValue(t.slice(0, MAX))}
                 multiline={mode !== 'TYPE'}

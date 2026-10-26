@@ -10,6 +10,7 @@ import {
 import { ApiError, fetchMe, login, register, type AuthResponse, type PublicUser, type Role } from './authApi'
 import { forgetUnlock, rememberUnlock, verifyUnlock } from './offlineUnlock'
 import { attachWorkerAccount, forgetWorkerSessionOnThisDevice } from '@/features/worker/workerSession'
+import { registerForPush, unregisterForPush } from '@/features/notifications/push'
 
 type Status = 'loading' | 'signedOut' | 'signedIn'
 
@@ -51,6 +52,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // access whose only token had just been deleted. The grant now outlives the session and
     // is picked up again from the account on next sign-in; ending it early is a deliberate
     // act, by the worker on the patient screen or by the patient revoking.
+    // Before the token is thrown away: otherwise the next notification for this account
+    // lands on a phone somebody else is now holding.
+    await unregisterForPush()
     forgetWorkerSessionOnThisDevice()
 
     // Signing out is deliberate, so everything this phone remembered goes: the token, the
@@ -124,6 +128,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (user?.role === 'HEALTH_WORKER') attachWorkerAccount(user.id)
   }, [user])
+
+  // Asked for only once somebody is signed in: a permission prompt on the first screen of an
+  // app you have not used yet is the kind people decline out of hand.
+  useEffect(() => {
+    if (status === 'signedIn' && user) void registerForPush()
+  }, [status, user])
 
   const signIn = useCallback(async (email: string, password: string) => {
     const address = email.trim().toLowerCase()

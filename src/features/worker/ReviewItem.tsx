@@ -1,4 +1,5 @@
 import { Pressable, Text, TextInput, View } from 'react-native';
+import { C } from '@/components/design/tokens';
 import Feather from '@expo/vector-icons/Feather';
 
 import { CATEGORY_LABELS, CLAIM_CATEGORIES, type ClaimCategory, type DraftItem } from './workerApi';
@@ -38,27 +39,27 @@ export default function ReviewItem({ item, index, fromAi, onChange, onRemove }: 
         <View className="flex-row items-center gap-1.5">
           {confirmed ? (
             <View className="h-6 flex-row items-center gap-1.5 rounded-full bg-primary-soft px-2.5">
-              <Feather name="check" size={11} color="#0F6E56" />
+              <Feather name="check" size={11} color={C.primary} />
               <Text className="text-xs font-medium text-primary">Confirmed by you</Text>
             </View>
           ) : (
             <>
               {fromAi ? (
                 <View className="h-6 flex-row items-center gap-1.5 rounded-full bg-neutral-soft px-2.5">
-                  <Feather name="zap" size={11} color="#5D6C82" />
+                  <Feather name="zap" size={11} color={C.muted} />
                   <Text className="text-xs font-medium text-muted">AI draft</Text>
                 </View>
               ) : null}
               <Pressable
                 onPress={() => onChange(index, { confirmed: true })}
                 className="h-6 flex-row items-center gap-1 rounded-lg border border-line px-2.5">
-                <Feather name="check" size={11} color="#142D2A" />
+                <Feather name="check" size={11} color={C.ink} />
                 <Text className="text-xs font-medium text-ink">Confirm</Text>
               </Pressable>
             </>
           )}
           <Pressable onPress={() => onRemove(index)} hitSlop={8} className="pl-1">
-            <Feather name="x" size={16} color="#7C8A9C" />
+            <Feather name="x" size={16} color={C.hint} />
           </Pressable>
         </View>
       </View>
@@ -68,7 +69,7 @@ export default function ReviewItem({ item, index, fromAi, onChange, onRemove }: 
         onChangeText={(value) => onChange(index, { value, confirmed: false })}
         multiline
         placeholder="What was recorded"
-        placeholderTextColor="#7C8A9C"
+        placeholderTextColor={C.hint}
         className="text-[15px] font-medium leading-[21px] text-ink"
       />
     </View>

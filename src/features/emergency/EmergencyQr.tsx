@@ -5,6 +5,7 @@ import QRCode from 'react-native-qrcode-svg';
 import Feather from '@expo/vector-icons/Feather';
 
 import { fetchWithCache } from '@/offline/cachedFetch';
+import { C } from '@/components/design/tokens';
 
 interface MeResponse {
   medrekkCode?: string;
@@ -46,10 +47,10 @@ export default function EmergencyQr() {
       <Pressable onPress={() => setOpen(true)} disabled={!url} className="items-center gap-2">
         <View className="rounded-[14px] border border-line p-2.5">
           {url ? (
-            <QRCode value={url} size={136} color="#142D2A" backgroundColor="#FFFFFF" />
+            <QRCode value={url} size={136} color={C.ink} backgroundColor={C.surface} />
           ) : (
             <View className="h-[136px] w-[136px] items-center justify-center">
-              {error ? <Feather name="alert-circle" size={22} color="#5D6C82" /> : <ActivityIndicator />}
+              {error ? <Feather name="alert-circle" size={22} color={C.muted} /> : <ActivityIndicator />}
             </View>
           )}
         </View>
@@ -65,7 +66,7 @@ export default function EmergencyQr() {
 
             {url ? (
               <View className="rounded-2xl border border-line bg-surface p-5">
-                <QRCode value={url} size={248} color="#142D2A" backgroundColor="#FFFFFF" />
+                <QRCode value={url} size={248} color={C.ink} backgroundColor={C.surface} />
               </View>
             ) : error ? (
               <Text className="text-center text-sm text-danger">{error}</Text>
@@ -82,7 +83,7 @@ export default function EmergencyQr() {
             ) : null}
 
             <View className="max-w-[330px] flex-row items-start gap-2.5 rounded-xl bg-fill px-3.5 py-3">
-              <Feather name="lock" size={15} color="#5D6C82" />
+              <Feather name="lock" size={15} color={C.muted} />
               <Text className="flex-1 text-xs leading-[17px] text-muted">
                 Anyone who scans this sees your emergency card only, without your approval. The QR holds a link, not
                 medical data, and every open is logged in your history.

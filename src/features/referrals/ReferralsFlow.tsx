@@ -1,18 +1,18 @@
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
 
 import { api } from "@/services/api";
 import ReferralCreate from "./ReferralCreate";
 import ReferralShare from "./ReferralShare";
 import { effectiveStatus, type Referral } from "./types";
+import { Chrome, Screen, Sheet } from "@/components/design/split";
 
 type Screen = { kind: "list" } | { kind: "create" } | { kind: "share"; referral: Referral };
 
 const PILL: Record<string, { bg: string; text: string; label: string }> = {
-  ACTIVE: { bg: "bg-emerald-100", text: "text-emerald-800", label: "Active" },
-  REVOKED: { bg: "bg-gray-200", text: "text-gray-700", label: "Cancelled" },
-  EXPIRED: { bg: "bg-amber-100", text: "text-amber-800", label: "Expired" },
+  ACTIVE: { bg: "bg-primary-soft", text: "text-primary", label: "Active" },
+  REVOKED: { bg: "bg-track", text: "text-muted", label: "Cancelled" },
+  EXPIRED: { bg: "bg-warn-soft", text: "text-warn", label: "Expired" },
 };
 
 export default function ReferralsFlow({ onClose }: { onClose: () => void }) {
@@ -59,23 +59,17 @@ export default function ReferralsFlow({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white dark:bg-black">
-      <ScrollView contentContainerStyle={{ padding: 24, gap: 12 }}>
-        <Pressable onPress={onClose} className="self-start py-1">
-          <Text className="text-base text-[#0F6E56]">Back to my record</Text>
-        </Pressable>
-        <Text className="text-3xl font-bold text-gray-900 dark:text-white">Referrals</Text>
-        <Text className="text-sm text-gray-500 dark:text-gray-400">
-          A referral shares a snapshot of the items you choose with a provider who does not have your record yet.
-        </Text>
+    <Screen>
+      <Chrome title="Referrals" subtitle="A snapshot you choose, for a provider without your record" onBack={onClose} />
+      <Sheet>
 
-        <Pressable onPress={() => setScreen({ kind: "create" })} className="items-center rounded-xl bg-[#0F6E56] py-4">
+        <Pressable onPress={() => setScreen({ kind: "create" })} className="items-center rounded-xl bg-primary py-4">
           <Text className="text-base font-semibold text-white">New referral</Text>
         </Pressable>
 
-        {error ? <Text className="text-sm text-red-700">{error}</Text> : null}
+        {error ? <Text className="text-sm text-danger">{error}</Text> : null}
         {!items && !error ? <ActivityIndicator /> : null}
-        {items && items.length === 0 ? <Text className="text-sm text-gray-500">No referrals yet.</Text> : null}
+        {items && items.length === 0 ? <Text className="text-sm text-muted">No referrals yet.</Text> : null}
 
         {(items ?? []).map((r) => {
           const status = effectiveStatus(r);
@@ -84,22 +78,22 @@ export default function ReferralsFlow({ onClose }: { onClose: () => void }) {
             <Pressable
               key={r.id}
               onPress={() => setScreen({ kind: "share", referral: r })}
-              className="gap-1 rounded-2xl border border-gray-200 p-4 active:opacity-80 dark:border-gray-800"
+              className="gap-1 rounded-2xl border border-line p-4 active:opacity-80"
             >
               <View className="flex-row items-center justify-between">
-                <Text className="flex-1 text-base font-semibold text-gray-900 dark:text-white">{r.destinationFacility ?? "Any provider"}</Text>
+                <Text className="flex-1 text-base font-semibold text-muted">{r.destinationFacility ?? "Any provider"}</Text>
                 <View className={`rounded-full px-2 py-0.5 ${pill.bg}`}>
                   <Text className={`text-xs font-medium ${pill.text}`}>{pill.label}</Text>
                 </View>
               </View>
-              <Text className="text-sm text-gray-700 dark:text-gray-300">{r.reason}</Text>
-              <Text className="text-xs text-gray-500">
+              <Text className="text-sm text-muted">{r.reason}</Text>
+              <Text className="text-xs text-muted">
                 {r.items.length} item{r.items.length === 1 ? "" : "s"} · expires {new Date(r.expiresAt).toLocaleDateString()}
               </Text>
             </Pressable>
           );
         })}
-      </ScrollView>
-    </SafeAreaView>
+      </Sheet>
+    </Screen>
   );
 }

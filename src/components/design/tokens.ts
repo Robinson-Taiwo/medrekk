@@ -28,6 +28,9 @@ export const C = {
   neutralSoft: '#EEF1F4',
   /** Borders and switch tracks only — never behind text. White on dim is 1.48:1. */
   dim: '#CBD5E1',
+  /** Evidence-backed, which had no colour of its own and borrowed whichever was nearest. */
+  evidence: '#1F56B8',
+  evidenceSoft: '#E8EEFB',
 
   /* The night surface. See tailwind.config.js for why the accent is lifted here. */
   night: '#0B1A17',
@@ -37,6 +40,10 @@ export const C = {
   mistFaint: '#7C9289',
   glow: '#2FBE8F',
   glowInk: '#06120F',
+  /** Amber on the night surface. The light-surface warn is 2.7:1 here and unreadable. */
+  glowWarn: '#F5B544',
+  /** A disabled action on the night surface: visibly a button, visibly not pressable. */
+  nightTrack: '#1E3A33',
 } as const;
 
 export type ColorToken = keyof typeof C;

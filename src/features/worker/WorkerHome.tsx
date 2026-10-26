@@ -1,14 +1,14 @@
 import { useCallback } from 'react';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { Pressable, ScrollView, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Pressable, Text, View } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
 
 import { useAuth } from '@/features/auth/AuthProvider';
 import { restoreWorkerSession, useWorkerSession } from '@/features/worker/workerSession';
 import { useModelStatus } from '@/features/ai/modelStore';
 import { Card, Meta } from '@/components/design/primitives';
-import { BottomTabInset } from '@/constants/theme';
+import { C } from '@/components/design/tokens';
+import { Callout, Chrome, ChromeTag, Empty, Heading, Note, Screen, Sheet } from '@/components/design/split';
 
 export default function WorkerHome() {
   const { user, refreshUser } = useAuth();
@@ -33,82 +33,76 @@ export default function WorkerHome() {
   const approved = session?.status === 'APPROVED';
 
   return (
-    <SafeAreaView className="flex-1 bg-canvas" edges={['top', 'left', 'right']}>
-      <ScrollView
-        contentContainerStyle={{ padding: 20, paddingBottom: BottomTabInset + 24, gap: 16 }}
-        showsVerticalScrollIndicator={false}>
-        <View className="gap-0.5">
-          <Meta>Health worker</Meta>
-          <Text className="text-2xl font-semibold tracking-tight text-ink">
-            {(user?.fullName ?? '').trim().split(/\s+/)[0] ?? ''}
-          </Text>
-        </View>
+    <Screen>
+      <Chrome
+        title={(user?.fullName ?? '').trim().split(/\s+/)[0] ?? ''}
+        subtitle={user?.facility ?? 'Health worker'}
+        right={
+          approved ? (
+            <ChromeTag label="Access live" tone="ok" />
+          ) : user?.credentialStatus === 'APPROVED' ? (
+            <ChromeTag label="Approved" tone="quiet" />
+          ) : (
+            <ChromeTag label="Licence pending" tone="warn" />
+          )
+        }
+      />
 
+      <Sheet>
         {approved && session ? (
+          /* The patient in front of you, and the one thing you came here to do. */
           <View className="gap-3.5 rounded-2xl bg-ink p-4">
-            <Text className="text-xs font-medium text-white/70">Current patient</Text>
+            <Text className="text-[11px] font-bold uppercase tracking-[1.2px] text-white/60">Current patient</Text>
             <View className="gap-1">
-              <Text className="text-xl font-semibold text-white">{session.patientName}</Text>
-              <Text className="text-sm tracking-widest text-white/60">{session.medrekkCode}</Text>
+              <Text className="text-[20px] font-semibold tracking-tight text-white">{session.patientName}</Text>
+              <Text className="text-[13px] tracking-[2px] text-white/60">{session.medrekkCode}</Text>
             </View>
             <Pressable
               onPress={() => router.push('/worker-encounter')}
-              className="h-11 flex-row items-center justify-center gap-2 rounded-xl bg-surface">
-              <Feather name="edit-3" size={16} color="#142D2A" />
-              <Text className="text-[15px] font-medium text-ink">Record an encounter</Text>
+              className="h-12 flex-row items-center justify-center gap-2 rounded-xl"
+              style={{ backgroundColor: C.glow }}>
+              <Feather name="edit-3" size={16} color={C.glowInk} />
+              <Text className="text-[15px] font-semibold" style={{ color: C.glowInk }}>
+                Record an encounter
+              </Text>
             </Pressable>
           </View>
         ) : (
-          <Card className="items-center gap-3 px-5 py-7">
-            <View className="h-14 w-14 items-center justify-center rounded-2xl bg-fill">
-              <Feather name="search" size={22} color="#5D6C82" />
-            </View>
-            <Text className="text-[17px] font-semibold text-ink">No patient yet</Text>
-            <Text className="max-w-[280px] text-center text-sm leading-5 text-muted">
-              Find a patient by their MedRekk code and name. They approve on their own phone before you can record
-              anything.
-            </Text>
-            <Pressable
-              onPress={() => router.push('/worker-patient')}
-              className="mt-1 h-11 justify-center rounded-xl bg-primary px-5">
-              <Text className="text-[15px] font-medium text-white">Find a patient</Text>
-            </Pressable>
-          </Card>
+          <Empty
+            icon="search"
+            title="No patient yet"
+            body="Find a patient by their MedRekk code and name. They approve on their own phone before you can record anything."
+            action="Find a patient"
+            onAction={() => router.push('/worker-patient')}
+          />
         )}
 
         {user?.credentialStatus !== 'APPROVED' ? (
-          <Pressable onPress={() => router.push('/worker-credential')}>
-            <Card className="gap-2 border-warn-soft bg-warn-soft p-4">
-              <View className="flex-row items-center gap-2">
-                <Feather name="award" size={16} color="#B45309" />
-                <Text className="text-[13px] font-semibold text-warn">
-                  {user?.licence ? 'Licence under review' : 'Add your licence'}
-                </Text>
-              </View>
-              <Text className="text-[13px] leading-5 text-muted">
-                {user?.licence
-                  ? 'Someone is checking your number against the register. You can keep working while they do.'
-                  : 'You can find a patient and record a visit now. Confirming what is already in a record needs your licence first.'}
-              </Text>
-              <Text className="text-[13px] font-medium text-primary">
-                {user?.licence ? 'Review what you sent' : 'Add it now'}
-              </Text>
-            </Card>
-          </Pressable>
+          <Callout
+            kicker={user?.licence ? 'Under review' : 'Needed'}
+            title={user?.licence ? 'Your licence is being checked' : 'Add your licence'}
+            action={user?.licence ? 'Review what you sent' : 'Add it now'}
+            onAction={() => router.push('/worker-credential')}>
+            <Note>
+              {user?.licence
+                ? 'Someone is checking your number against the register. You can keep working while they do.'
+                : 'You can find a patient and record a visit now. Confirming what is already in a record needs your licence first.'}
+            </Note>
+          </Callout>
         ) : null}
 
-        <View className="gap-2">
-          <Text className="text-[11px] font-medium uppercase tracking-wider text-muted">On-device AI</Text>
+        <View className="gap-2.5">
+          <Heading>On-device AI</Heading>
           <Pressable onPress={() => router.push('/worker-model')}>
             <Card className="flex-row items-center gap-3 p-3.5">
               <View
-                className={`h-[38px] w-[38px] items-center justify-center rounded-[10px] ${
+                className={`h-[38px] w-[38px] items-center justify-center rounded-xl ${
                   model.state === 'READY' ? 'bg-primary-soft' : 'bg-fill'
                 }`}>
-                <Feather name="cpu" size={18} color={model.state === 'READY' ? '#0F6E56' : '#5D6C82'} />
+                <Feather name="cpu" size={18} color={model.state === 'READY' ? C.primary : C.muted} />
               </View>
               <View className="flex-1 gap-0.5">
-                <Text className="text-sm font-medium text-ink">
+                <Text className="text-[14px] font-semibold text-ink">
                   {model.state === 'READY' ? 'Model installed' : 'Model not installed'}
                 </Text>
                 <Meta>
@@ -117,11 +111,11 @@ export default function WorkerHome() {
                     : 'Without it, notes are structured by simple rules'}
                 </Meta>
               </View>
-              <Feather name="chevron-right" size={18} color="#5D6C82" />
+              <Feather name="chevron-right" size={18} color={C.muted} />
             </Card>
           </Pressable>
         </View>
-      </ScrollView>
-    </SafeAreaView>
+      </Sheet>
+    </Screen>
   );
 }

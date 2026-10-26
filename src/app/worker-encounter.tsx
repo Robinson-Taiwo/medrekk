@@ -23,6 +23,7 @@ import { captureFromCamera, captureFromLibrary } from '@/features/ai/photo';
 import { Card, Meta } from '@/components/design/primitives';
 import { C } from '@/components/design/tokens';
 import { BottomTabInset } from '@/constants/theme';
+import { Chrome, ChromeTag, Empty, Heading, Note, Screen, Sheet } from '@/components/design/split';
 
 type Stage = 'CAPTURE' | 'PROCESSING' | 'REVIEW' | 'SAVED';
 
@@ -108,17 +109,16 @@ export default function WorkerEncounterScreen() {
 
   if (!session || session.status !== 'APPROVED') {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-canvas p-6">
-        <View className="items-center gap-3">
-          <View className="h-14 w-14 items-center justify-center rounded-2xl bg-fill">
-            <Feather name="user-x" size={22} color="#5D6C82" />
-          </View>
-          <Text className="text-[17px] font-semibold text-ink">No approved patient</Text>
-          <Text className="max-w-[280px] text-center text-sm leading-5 text-muted">
-            Find a patient and wait for them to approve on their own phone before recording anything.
-          </Text>
-        </View>
-      </SafeAreaView>
+      <Screen>
+        <Chrome title="Record encounter" />
+        <Sheet>
+          <Empty
+            icon="user-x"
+            title="No approved patient"
+            body="Find a patient and wait for them to approve on their own phone before recording anything."
+          />
+        </Sheet>
+      </Screen>
     );
   }
 
@@ -213,31 +213,21 @@ export default function WorkerEncounterScreen() {
     ]);
 
   return (
-    <SafeAreaView className="flex-1 bg-canvas" edges={['top', 'left', 'right']}>
-      <ScrollView
-        contentContainerStyle={{ padding: 20, paddingBottom: BottomTabInset + 24, gap: 14 }}
-        showsVerticalScrollIndicator={false}>
-        <Card className="flex-row items-center gap-3 p-3">
-          <View className="h-10 w-10 items-center justify-center rounded-[10px] bg-primary-soft">
-            <Text className="text-sm font-semibold text-primary">
-              {session.patientName.trim().charAt(0).toUpperCase()}
-            </Text>
-          </View>
-          <View className="flex-1 gap-0.5">
-            <Text className="text-[15px] font-medium text-ink">{session.patientName}</Text>
-            <Meta>{session.medrekkCode}</Meta>
-          </View>
-          <View className="h-6 flex-row items-center gap-1.5 rounded-full bg-primary-soft px-2.5">
-            <Feather name="check-circle" size={11} color="#0F6E56" />
-            <Text className="text-xs font-medium text-primary">Approved</Text>
-          </View>
-        </Card>
+    <Screen>
+      {/* Who you are recording for stays in the frame, so it is on screen at every stage
+          rather than scrolling away above the thing being written down. */}
+      <Chrome
+        title={session.patientName}
+        subtitle={session.medrekkCode}
+        right={<ChromeTag label="Approved" tone="ok" />}
+      />
+      <Sheet>
 
         {stage === 'CAPTURE' ? (
           <>
             <View className="gap-1">
-              <Text className="text-2xl font-semibold tracking-tight text-ink">Record encounter</Text>
-              <Meta>Type what the patient tells you, in your own words.</Meta>
+              <Heading>Record encounter</Heading>
+              <Note>Type what the patient tells you, in your own words.</Note>
             </View>
 
             <View className="flex-row rounded-xl bg-track p-[3px]">
@@ -283,7 +273,7 @@ export default function WorkerEncounterScreen() {
                 {voice.stage === 'RECORDING' ? (
                   <>
                     <View className="h-14 w-14 items-center justify-center rounded-full bg-danger-soft">
-                      <Feather name="mic" size={22} color="#CE2B2B" />
+                      <Feather name="mic" size={22} color={C.danger} />
                     </View>
                     <Text className="text-[15px] font-medium text-ink">Listening…</Text>
                     <Meta>Say what the patient told you. Tap stop when you are done.</Meta>
@@ -309,7 +299,7 @@ export default function WorkerEncounterScreen() {
                   multiline
                   textAlignVertical="top"
                   placeholder="Fever and headache for three days. Temp 38.4. Allergic to penicillin..."
-                  placeholderTextColor="#7C8A9C"
+                  placeholderTextColor={C.hint}
                   className="min-h-[200px] p-3.5 text-base leading-6 text-ink"
                 />
               </Card>
@@ -326,14 +316,14 @@ export default function WorkerEncounterScreen() {
                     onPress={() => void readPhoto('CAMERA')}
                     disabled={reading}
                     className="h-[52px] flex-1 flex-row items-center justify-center gap-2 rounded-xl border border-line bg-surface">
-                    <Feather name="camera" size={17} color="#0F6E56" />
+                    <Feather name="camera" size={17} color={C.primary} />
                     <Text className="text-[13px] font-medium text-primary">Take a photo</Text>
                   </Pressable>
                   <Pressable
                     onPress={() => void readPhoto('LIBRARY')}
                     disabled={reading}
                     className="h-[52px] flex-1 flex-row items-center justify-center gap-2 rounded-xl border border-line bg-surface">
-                    <Feather name="image" size={17} color="#0F6E56" />
+                    <Feather name="image" size={17} color={C.primary} />
                     <Text className="text-[13px] font-medium text-primary">Choose one</Text>
                   </Pressable>
                 </View>
@@ -351,7 +341,7 @@ export default function WorkerEncounterScreen() {
               <Pressable
                 onPress={() => void voice.start()}
                 className="h-[52px] flex-row items-center justify-center gap-2 rounded-xl border border-line bg-surface">
-                <Feather name="mic" size={17} color="#0F6E56" />
+                <Feather name="mic" size={17} color={C.primary} />
                 <Text className="text-base font-medium text-primary">
                   {raw.length > 0 ? 'Record more' : 'Start recording'}
                 </Text>
@@ -361,7 +351,7 @@ export default function WorkerEncounterScreen() {
             {voice.error ? <Text className="text-sm text-danger">{voice.error}</Text> : null}
 
             <View className="flex-row items-start gap-2.5 rounded-xl bg-fill px-3.5 py-3">
-              <Feather name="cpu" size={16} color="#5D6C82" />
+              <Feather name="cpu" size={16} color={C.muted} />
               <Text className="flex-1 text-xs leading-[17px] text-muted">
                 Structured on this phone. The note is not sent anywhere while the AI drafts it.
               </Text>
@@ -388,7 +378,7 @@ export default function WorkerEncounterScreen() {
 
         {stage === 'PROCESSING' ? (
           <View className="items-center gap-4 py-24">
-            <ActivityIndicator color="#0F6E56" />
+            <ActivityIndicator color={C.primary} />
             <Text className="text-base font-medium text-ink">Structuring on this device…</Text>
             <Text className="max-w-[260px] text-center text-sm leading-5 text-muted">
               Nothing reaches the record until you have reviewed it.
@@ -416,7 +406,7 @@ export default function WorkerEncounterScreen() {
                     Check with the patient
                   </Text>
                   <View className="h-6 flex-row items-center gap-1.5 rounded-full bg-danger-soft px-2.5">
-                    <Feather name="alert-triangle" size={11} color="#CE2B2B" />
+                    <Feather name="alert-triangle" size={11} color={C.danger} />
                     <Text className="text-xs font-medium text-danger">Conflict</Text>
                   </View>
                 </View>
@@ -444,7 +434,7 @@ export default function WorkerEncounterScreen() {
             {items.length === 0 ? (
               <View className="items-center gap-2 rounded-xl border border-line bg-surface px-5 py-7">
                 <View className="h-12 w-12 items-center justify-center rounded-2xl bg-fill">
-                  <Feather name="search" size={20} color="#5D6C82" />
+                  <Feather name="search" size={20} color={C.muted} />
                 </View>
                 <Text className="text-[15px] font-semibold text-ink">Nothing was found to record</Text>
                 <Text className="max-w-[280px] text-center text-sm leading-5 text-muted">
@@ -481,7 +471,7 @@ export default function WorkerEncounterScreen() {
                 setItems((prev) => [...prev, { category: 'CURRENT_MEDICATIONS', value: '', confirmed: true }])
               }
               className="h-[52px] flex-row items-center justify-center gap-2 rounded-xl border border-line bg-surface">
-              <Feather name="plus" size={17} color="#142D2A" />
+              <Feather name="plus" size={17} color={C.ink} />
               <Text className="text-base font-medium text-ink">Add an item</Text>
             </Pressable>
 
@@ -506,7 +496,7 @@ export default function WorkerEncounterScreen() {
         {stage === 'SAVED' ? (
           <View className="items-center gap-3 py-16">
             <View className="h-14 w-14 items-center justify-center rounded-2xl bg-primary-soft">
-              <Feather name="check" size={24} color="#0F6E56" />
+              <Feather name="check" size={24} color={C.primary} />
             </View>
             <Text className="text-[22px] font-semibold tracking-tight text-ink">Saved</Text>
             <Text className="max-w-[300px] text-center text-sm leading-5 text-muted">
@@ -533,7 +523,7 @@ export default function WorkerEncounterScreen() {
             </Pressable>
           </View>
         ) : null}
-      </ScrollView>
-    </SafeAreaView>
+      </Sheet>
+    </Screen>
   );
 }

@@ -1,5 +1,6 @@
 import Feather from '@expo/vector-icons/Feather';
 import { Pressable, ScrollView, Text, View } from 'react-native';
+import { C } from '@/components/design/tokens';
 
 interface RowProps {
   icon: keyof typeof Feather.glyphMap;
@@ -13,14 +14,14 @@ function ControlRow({ icon, title, body, value, onPress }: RowProps) {
   return (
     <Pressable onPress={onPress} className="flex-row items-center gap-3 px-3.5 py-3">
       <View className="h-10 w-10 items-center justify-center rounded-[10px] bg-fill">
-        <Feather name={icon} size={18} color="#142D2A" />
+        <Feather name={icon} size={18} color={C.ink} />
       </View>
       <View className="flex-1 gap-0.5">
         <Text className="text-[15px] font-medium text-ink">{title}</Text>
         <Text className="text-xs text-muted">{body}</Text>
       </View>
       <Text className="text-[13px] text-muted">{value}</Text>
-      <Feather name="chevron-right" size={18} color="#5D6C82" />
+      <Feather name="chevron-right" size={18} color={C.muted} />
     </Pressable>
   );
 }
@@ -28,7 +29,7 @@ function ControlRow({ icon, title, body, value, onPress }: RowProps) {
 function EmptyRow({ icon, label }: { icon: keyof typeof Feather.glyphMap; label: string }) {
   return (
     <View className="flex-row items-center gap-2.5 rounded-xl border border-dashed border-line px-3.5 py-3.5">
-      <Feather name={icon} size={16} color="#5D6C82" />
+      <Feather name={icon} size={16} color={C.muted} />
       <Text className="text-sm text-muted">{label}</Text>
     </View>
   );
@@ -58,7 +59,7 @@ export default function AccessEmpty({
 
       <View className="items-center gap-3 rounded-2xl border border-line bg-surface px-5 py-6">
         <View className="h-14 w-14 items-center justify-center rounded-full bg-primary-soft">
-          <Feather name="lock" size={22} color="#0F6E56" />
+          <Feather name="lock" size={22} color={C.primary} />
         </View>
         <Text className="text-xl font-semibold text-ink">Your record is private</Text>
         <Text className="max-w-[300px] text-center text-sm leading-[21px] text-muted">
@@ -69,13 +70,13 @@ export default function AccessEmpty({
           <Pressable
             onPress={onShowCode}
             className="h-12 flex-1 flex-row items-center justify-center gap-2 rounded-xl bg-primary">
-            <Feather name="grid" size={16} color="#FFFFFF" />
+            <Feather name="grid" size={16} color={C.surface} />
             <Text className="text-[15px] font-medium text-white">Show my code</Text>
           </Pressable>
           <Pressable
             onPress={onHowItWorks}
             className="h-12 flex-1 flex-row items-center justify-center gap-2 rounded-xl border border-line bg-surface">
-            <Feather name="info" size={16} color="#142D2A" />
+            <Feather name="info" size={16} color={C.ink} />
             <Text className="text-[15px] font-medium text-ink">How it works</Text>
           </Pressable>
         </View>

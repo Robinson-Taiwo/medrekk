@@ -7,6 +7,8 @@ import Feather from '@expo/vector-icons/Feather';
 import { api } from '@/services/api';
 import { Card, Meta } from '@/components/design/primitives';
 import { explainReport, type Section } from '@/features/ai/reportTemplates';
+import { Chrome, Screen, Sheet } from '@/components/design/split';
+import { C } from '@/components/design/tokens';
 
 interface Visit {
   id: string;
@@ -90,11 +92,9 @@ export default function VisitScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-canvas" edges={['top', 'left', 'right']}>
-      <ScrollView contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: 40 }}>
-        <Pressable onPress={() => router.navigate('/record')} hitSlop={8} className="h-10 w-10 justify-center">
-          <Feather name="chevron-left" size={24} color="#142D2A" />
-        </Pressable>
+    <Screen>
+      <Chrome title={"Visit"} subtitle={undefined} onBack={() => router.navigate('/record')} />
+      <Sheet>
 
         <View className="gap-1.5">
           <Text className="text-[11px] font-medium uppercase tracking-wider text-muted">Visit</Text>
@@ -149,7 +149,7 @@ export default function VisitScreen() {
                     <Text className="text-[15px] font-medium text-ink">{claim.value}</Text>
                     <Meta>Added to your record from this visit</Meta>
                   </View>
-                  <Feather name="chevron-right" size={18} color="#5D6C82" />
+                  <Feather name="chevron-right" size={18} color={C.muted} />
                 </Card>
               </Pressable>
             ))}
@@ -161,7 +161,7 @@ export default function VisitScreen() {
           This page shows what was recorded at the visit and explains the terms in it. It is not a diagnosis and not a
           recommendation.
         </Meta>
-      </ScrollView>
-    </SafeAreaView>
+      </Sheet>
+    </Screen>
   );
 }

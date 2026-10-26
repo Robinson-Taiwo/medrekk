@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { Alert, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Alert, Pressable, RefreshControl, Text, View } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
 
 import { useAuth } from '@/features/auth/AuthProvider';
@@ -12,8 +11,8 @@ import { api } from '@/services/api';
 import { PROFILE_PATH, type EmergencyProfileData } from '@/features/emergency/types';
 import { Card, Meta } from '@/components/design/primitives';
 import { C } from '@/components/design/tokens';
+import { Callout, Chrome, ChromeTag, Empty, Heading, Note, Screen, Sheet } from '@/components/design/split';
 import { CATEGORY_ICON, countByCategory, nounFor } from '@/features/record/categories';
-import { BottomTabInset } from '@/constants/theme';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? '';
 
@@ -54,11 +53,12 @@ function timeLeft(until: string): string {
   return `${hours}h ${minutes % 60}m left`;
 }
 
+/** One fact on the dark chrome. Three of them read as a passport without needing a frame. */
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <View className="flex-1 gap-0.5 rounded-[10px] bg-white/10 px-2.5 py-2">
-      <Text className="text-[11px] text-white/60">{label}</Text>
-      <Text className="text-base font-semibold text-white">{value}</Text>
+    <View className="flex-1 gap-0.5 rounded-xl bg-white/[0.07] px-3 py-2">
+      <Text className="text-[10.5px] text-mist-faint">{label}</Text>
+      <Text className="text-[15px] font-semibold text-mist">{value}</Text>
     </View>
   );
 }
@@ -246,132 +246,78 @@ export default function Index() {
   const recordCounts = [...countByCategory(claims).entries()].sort((a, b) => b[1] - a[1]);
 
   return (
-    <SafeAreaView className="flex-1 bg-canvas" edges={['top', 'left', 'right']}>
-      <ScrollView
-        contentContainerStyle={{ padding: 20, paddingBottom: BottomTabInset + 24, gap: 16 }}
-        showsVerticalScrollIndicator={false}
+    <Screen>
+      {/* The passport lives in the chrome. It is who you are, not an item in your record, so
+          it belongs to the frame rather than sitting in a card among the things you own. */}
+      <Chrome
+        title={`${greeting()} ${firstName(name)}`.trim()}
+        subtitle={me?.medrekkCode ? `MedRekk code · ${me.medrekkCode}` : undefined}
+        right={<ChromeTag label={online === false ? 'Offline' : 'Synced'} tone={online === false ? 'warn' : 'ok'} />}
+      />
+      <View className="flex-row gap-2 px-5 pb-4">
+        <Stat label="Blood group" value={profile?.bloodGroup ?? '—'} />
+        <Stat label="Allergies" value={String(profile?.criticalAllergies.length ?? 0)} />
+        <Stat label="Conditions" value={String(profile?.criticalConditions.length ?? 0)} />
+      </View>
+
+      <Sheet
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
+            tintColor={C.muted}
             onRefresh={() => {
               setRefreshing(true);
-              void Promise.all([load(), loadAllergies(), loadUssd(), ping()]).finally(() =>
-                setRefreshing(false),
-              );
+              void Promise.all([load(), loadAllergies(), loadUssd(), ping()]).finally(() => setRefreshing(false));
             }}
           />
         }>
-        <View className="flex-row items-center justify-between">
-          <View className="gap-0.5">
-            <Text className="text-[13px] text-muted">{greeting()}</Text>
-            <Text className="text-2xl font-semibold tracking-tight text-ink">{firstName(name)}</Text>
-          </View>
-          <Pressable
-            onPress={() => router.push('/patient/me')}
-            className="h-10 w-10 items-center justify-center rounded-[10px] bg-primary-soft">
-            <Text className="text-sm font-semibold text-primary">{initials(name)}</Text>
-          </Pressable>
-        </View>
-
-        <View className="gap-3.5 rounded-2xl bg-ink p-4">
-          <View className="flex-row items-center justify-between">
-            <Text className="text-xs font-medium text-white/70">Health passport</Text>
-            <View className="flex-row items-center gap-1.5">
-              <View
-                className={`h-1.5 w-1.5 rounded-full ${
-                  online === null ? 'bg-white/40' : online ? 'bg-primary-soft' : 'bg-danger'
-                }`}
-              />
-              <Text className="text-xs text-white/80">{online === false ? 'Offline' : 'Available offline'}</Text>
-            </View>
-          </View>
-
-          <View className="flex-row items-end justify-between">
-            <View className="gap-1">
-              <Text className="text-xs text-white/60">MedRekk code</Text>
-              <Text className="text-2xl font-semibold tracking-widest text-white">{me?.medrekkCode ?? '—'}</Text>
-            </View>
-            <Pressable
-              onPress={() => router.push('/patient/emergency')}
-              className="h-9 flex-row items-center gap-1.5 rounded-[10px] bg-surface px-3">
-              <Feather name="grid" size={15} color="#142D2A" />
-              <Text className="text-[13px] font-medium text-ink">Show QR</Text>
-            </Pressable>
-          </View>
-
-          <View className="flex-row gap-2">
-            <Stat label="Blood group" value={profile?.bloodGroup ?? '—'} />
-            <Stat label="Allergies" value={String(profile?.criticalAllergies.length ?? 0)} />
-            <Stat label="Conditions" value={String(profile?.criticalConditions.length ?? 0)} />
-          </View>
-        </View>
-
         {pending ? (
-          <Card className="gap-3 p-3.5">
-            <View className="flex-row items-center gap-3">
-              <View className="h-[38px] w-[38px] items-center justify-center rounded-[10px] bg-fill">
-                <Feather name="user-check" size={18} color="#142D2A" />
-              </View>
-              <View className="flex-1 gap-0.5">
-                <Text className="text-sm font-medium text-ink">
-                  {pending.requester?.name ?? 'A provider'} requests access
-                </Text>
-                <Meta>
-                  {pending.requester?.facility ? `${pending.requester.facility} · ` : ''}
-                  {pending.requestedScopes.length} {pending.requestedScopes.length === 1 ? 'area' : 'areas'}
-                </Meta>
-              </View>
-              <Pressable
-                onPress={() => router.push('/patient/access')}
-                className="h-[34px] justify-center rounded-[10px] bg-primary px-3.5">
-                <Text className="text-[13px] font-medium text-white">Review</Text>
-              </Pressable>
-            </View>
-          </Card>
+          <Callout
+            kicker="Waiting for you"
+            title={`${pending.requester?.name ?? 'A provider'} wants to read your record`}
+            action="Review the request"
+            onAction={() => router.push('/patient/access')}>
+            <Note>
+              {pending.requester?.facility ? `${pending.requester.facility} · ` : ''}
+              {pending.requestedScopes.length} {pending.requestedScopes.length === 1 ? 'area' : 'areas'} asked for
+            </Note>
+          </Callout>
         ) : null}
 
         {awaitingEmergency ? (
-          <Card className="gap-3 p-3.5">
-            <View className="flex-row items-center gap-3">
-              <View className="h-9 w-9 items-center justify-center rounded-[10px] bg-danger-soft">
-                <Feather name="alert-circle" size={17} color="#CE2B2B" />
-              </View>
-              <View className="flex-1 gap-0.5">
-                <Text className="text-[15px] font-medium text-ink">Add to your emergency card?</Text>
-                <Meta>A health worker recorded that you are allergic to {awaitingEmergency.value}.</Meta>
-              </View>
-            </View>
-
-            <Text className="rounded-[10px] bg-fill px-3 py-2.5 text-xs leading-[17px] text-muted">
+          <Callout tone="danger" kicker="Your decision" title="Add this to your emergency card?">
+            <Note>A health worker recorded that you are allergic to {awaitingEmergency.value}.</Note>
+            <Text className="rounded-xl bg-white/60 px-3 py-2.5 text-[12px] leading-[17px] text-muted">
               Anyone who scans your emergency QR can read what is on that card, without needing your approval. Only
               put something there if you want it seen in an emergency.
             </Text>
-
-            <View className="flex-row gap-2">
+            <View className="mt-1 flex-row gap-2">
               <Pressable
                 onPress={() => void decideEmergency(awaitingEmergency.id, false)}
                 disabled={deciding}
                 className="h-11 flex-1 items-center justify-center rounded-xl border border-line bg-surface">
-                <Text className="text-[13px] font-medium text-ink">Not now</Text>
+                <Text className="text-[14px] font-medium text-ink">Not now</Text>
               </Pressable>
               <Pressable
                 onPress={() => void decideEmergency(awaitingEmergency.id, true)}
                 disabled={deciding}
-                className={`h-11 flex-1 items-center justify-center rounded-xl bg-primary ${deciding ? 'opacity-50' : ''}`}>
-                <Text className="text-[13px] font-medium text-white">Add it</Text>
+                className={`h-11 flex-1 items-center justify-center rounded-xl bg-danger ${deciding ? 'opacity-50' : ''}`}>
+                <Text className="text-[14px] font-semibold text-white">Add it</Text>
               </Pressable>
             </View>
-          </Card>
+          </Callout>
         ) : null}
 
         {setupDone < setupSteps.length ? (
           <View className="gap-2.5">
-            <View className="flex-row items-end justify-between">
-              <Text className="text-lg font-semibold text-ink">Finish setting up</Text>
-              <Meta>
-                {setupDone} of {setupSteps.length} done
-              </Meta>
-            </View>
+            <Heading
+              right={
+                <Text className="text-[12px] text-muted">
+                  {setupDone} of {setupSteps.length} done
+                </Text>
+              }>
+              Finish setting up
+            </Heading>
             <Card className="divide-y divide-line overflow-hidden">
               {setupSteps.map((step) => (
                 <SetupStep key={step.title} {...step} />
@@ -381,78 +327,68 @@ export default function Index() {
         ) : null}
 
         <View className="gap-2.5">
-          <View className="flex-row items-center justify-between">
-            <Text className="text-lg font-semibold text-ink">Who can see your record</Text>
-            <Pressable onPress={() => router.push('/patient/access')} hitSlop={8}>
-              <Text className="text-[13px] font-medium text-primary">Manage</Text>
-            </Pressable>
-          </View>
+          <Heading
+            right={
+              <Pressable onPress={() => router.push('/patient/access')} hitSlop={8}>
+                <Text className="text-[13px] font-medium text-primary">Manage</Text>
+              </Pressable>
+            }>
+            Who can see your record
+          </Heading>
 
           {active.length === 0 ? (
-            <Card className="items-center gap-2 px-5 py-6">
-              <View className="h-12 w-12 items-center justify-center rounded-full bg-primary-soft">
-                <Feather name="lock" size={20} color={C.primary} />
-              </View>
-              <Text className="text-[15px] font-medium text-ink">Your record is private</Text>
-              <Text className="max-w-[290px] text-center text-[13px] leading-[19px] text-muted">
-                Nobody can see it. When a health worker asks, the request arrives here, and nothing is shared until
-                you approve it.
-              </Text>
-            </Card>
+            <Empty
+              icon="lock"
+              title="Your record is private"
+              body="Nobody can see it. When a health worker asks, the request arrives here, and nothing is shared until you approve it."
+            />
           ) : (
             active.map((session) => (
-              <Card key={session.id} className="gap-2.5 p-3.5">
-                <View className="flex-row items-center gap-3">
-                  <View className="h-[38px] w-[38px] items-center justify-center rounded-[10px] bg-primary-soft">
-                    <Text className="text-sm font-semibold text-primary">
-                      {initials(session.requester?.name ?? '?')}
-                    </Text>
-                  </View>
-                  <View className="flex-1 gap-0.5">
-                    <Text className="text-sm font-medium text-ink">{session.requester?.name ?? 'A provider'}</Text>
-                    <Meta>{session.requester?.facility ?? 'Facility not given'}</Meta>
-                  </View>
-                  {session.grantedUntil ? (
-                    <Text className="text-xs font-medium text-ink">{timeLeft(session.grantedUntil)}</Text>
-                  ) : null}
+              <Card key={session.id} className="flex-row items-center gap-3 p-3.5">
+                <View className="h-[38px] w-[38px] items-center justify-center rounded-xl bg-primary-soft">
+                  <Text className="text-[13px] font-semibold text-primary">
+                    {initials(session.requester?.name ?? '?')}
+                  </Text>
                 </View>
+                <View className="flex-1 gap-0.5">
+                  <Text className="text-[14px] font-semibold text-ink">{session.requester?.name ?? 'A provider'}</Text>
+                  <Meta>{session.requester?.facility ?? 'Facility not given'}</Meta>
+                </View>
+                {session.grantedUntil ? (
+                  <Text className="text-[12px] font-semibold text-ink">{timeLeft(session.grantedUntil)}</Text>
+                ) : null}
               </Card>
             ))
           )}
         </View>
 
         <View className="gap-2.5">
-          <View className="flex-row items-center justify-between">
-            <Text className="text-lg font-semibold text-ink">Your record</Text>
-            {claims.length > 0 ? (
-              <Pressable onPress={() => router.push('/patient/me')} hitSlop={8}>
-                <Text className="text-[13px] font-medium text-primary">See all</Text>
-              </Pressable>
-            ) : null}
-          </View>
+          <Heading
+            right={
+              claims.length > 0 ? (
+                <Pressable onPress={() => router.push('/patient/me')} hitSlop={8}>
+                  <Text className="text-[13px] font-medium text-primary">See all</Text>
+                </Pressable>
+              ) : undefined
+            }>
+            Your record
+          </Heading>
 
           {claims.length === 0 ? (
-            <Pressable onPress={() => router.push('/patient/me')}>
-              <Card className="gap-3 p-4">
-                <Text className="text-[15px] font-medium text-ink">Nothing recorded yet</Text>
-                <Text className="text-[13px] leading-[19px] text-muted">
-                  A health worker adds to this after a visit. You can add a prescription or a result yourself too —
-                  it is kept as self-reported until someone confirms it.
-                </Text>
-                <View className="h-11 flex-row items-center justify-center gap-2 rounded-xl bg-primary">
-                  <Feather name="plus" size={16} color={C.surface} />
-                  <Text className="text-[15px] font-medium text-white">Add something</Text>
-                </View>
-              </Card>
-            </Pressable>
+            <Empty
+              icon="plus-circle"
+              title="Nothing recorded yet"
+              body="A health worker adds to this after a visit. You can photograph a prescription or a result yourself too — it stays self-reported until someone confirms it."
+              action="Add something"
+              onAction={() => router.push('/patient/me')}
+            />
           ) : (
             <Pressable onPress={() => router.push('/patient/me')}>
               <Card className="gap-3 p-3.5">
+                {/* Counts, never values: this is the screen most likely to be read over a shoulder. */}
                 <View className="flex-row flex-wrap gap-2">
                   {recordCounts.map(([category, n]) => (
-                    <View
-                      key={category}
-                      className="flex-row items-center gap-2 rounded-[10px] bg-fill px-2.5 py-2">
+                    <View key={category} className="flex-row items-center gap-2 rounded-xl bg-fill px-2.5 py-2">
                       <Feather name={CATEGORY_ICON[category] ?? 'file-text'} size={14} color={C.ink} />
                       <Text className="text-[13px] text-ink">
                         <Text className="font-semibold">{n}</Text> {nounFor(category, n)}
@@ -461,7 +397,7 @@ export default function Index() {
                   ))}
                 </View>
                 <View className="flex-row items-center gap-2">
-                  <Text className="flex-1 text-xs leading-[17px] text-muted">
+                  <Text className="flex-1 text-[12px] leading-[17px] text-muted">
                     Only you can see this until you approve a request.
                   </Text>
                   <Feather name="chevron-right" size={18} color={C.muted} />
@@ -473,17 +409,17 @@ export default function Index() {
 
         <Pressable onPress={() => router.push('/patient/history')}>
           <Card className="flex-row items-center gap-3 p-3.5">
-            <View className="h-[38px] w-[38px] items-center justify-center rounded-[10px] bg-fill">
+            <View className="h-[38px] w-[38px] items-center justify-center rounded-xl bg-fill">
               <Feather name="eye" size={18} color={C.ink} />
             </View>
             <View className="flex-1 gap-0.5">
-              <Text className="text-sm font-medium text-ink">Who has looked at your record</Text>
+              <Text className="text-[14px] font-semibold text-ink">Who has looked at your record</Text>
               <Meta>Every view is written down, emergency scans included</Meta>
             </View>
             <Feather name="chevron-right" size={18} color={C.muted} />
           </Card>
         </Pressable>
-      </ScrollView>
-    </SafeAreaView>
+      </Sheet>
+    </Screen>
   );
 }

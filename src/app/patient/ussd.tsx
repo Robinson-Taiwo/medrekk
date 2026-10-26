@@ -6,6 +6,8 @@ import Feather from '@expo/vector-icons/Feather';
 
 import { api } from '@/services/api';
 import { Card, Eyebrow, Meta } from '@/components/design/primitives';
+import { Chrome, Screen, Sheet } from '@/components/design/split';
+import { C } from '@/components/design/tokens';
 
 interface PinStatus {
   set: boolean;
@@ -140,11 +142,13 @@ export default function UssdSetupScreen() {
     : 0;
 
   return (
-    <SafeAreaView className="flex-1 bg-canvas" edges={['top', 'left', 'right']}>
-      <ScrollView contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
-        <Pressable onPress={() => router.navigate('/profile')} hitSlop={8} className="h-10 w-10 justify-center">
-          <Feather name="chevron-left" size={24} color="#142D2A" />
-        </Pressable>
+    <Screen>
+      <Chrome
+        title="Reach your card by phone"
+        subtitle="No app, no internet"
+        onBack={() => router.navigate('/profile')}
+      />
+      <Sheet>
 
         <View className="gap-2">
           <Text className="text-[26px] font-semibold leading-8 tracking-tight text-ink">Reach your card by phone</Text>
@@ -170,7 +174,7 @@ export default function UssdSetupScreen() {
 
         {lockedMinutes > 0 ? (
           <View className="flex-row items-start gap-2.5 rounded-xl bg-danger-soft p-3.5">
-            <Feather name="lock" size={15} color="#CE2B2B" />
+            <Feather name="lock" size={15} color={C.danger} />
             <Text className="flex-1 text-[13px] leading-[19px] text-danger">
               Dialling is locked for {lockedMinutes} more {lockedMinutes === 1 ? 'minute' : 'minutes'} after too many
               wrong PINs. Your record is untouched.
@@ -186,7 +190,7 @@ export default function UssdSetupScreen() {
                 <TextInput
                   className={inputClass}
                   placeholder="08031234567"
-                  placeholderTextColor="#7C8A9C"
+                  placeholderTextColor={C.hint}
                   value={phoneDraft}
                   onChangeText={setPhoneDraft}
                   keyboardType="phone-pad"
@@ -219,7 +223,7 @@ export default function UssdSetupScreen() {
             ) : (
               <View className="flex-row items-center gap-3">
                 <View className="h-9 w-9 items-center justify-center rounded-[10px] bg-fill">
-                  <Feather name="phone" size={16} color="#142D2A" />
+                  <Feather name="phone" size={16} color={C.ink} />
                 </View>
                 <View className="flex-1 gap-0.5">
                   <Text className="text-[15px] font-medium text-ink">{status.phone}</Text>
@@ -243,7 +247,7 @@ export default function UssdSetupScreen() {
             <Card className="gap-3 p-3.5">
               <View className="flex-row items-center gap-3">
                 <View className="h-9 w-9 items-center justify-center rounded-[10px] bg-primary-soft">
-                  <Feather name="check" size={16} color="#0F6E56" />
+                  <Feather name="check" size={16} color={C.primary} />
                 </View>
                 <View className="flex-1 gap-0.5">
                   <Text className="text-[15px] font-medium text-ink">PIN set</Text>
@@ -268,7 +272,7 @@ export default function UssdSetupScreen() {
               <TextInput
                 className={inputClass}
                 placeholder="New PIN"
-                placeholderTextColor="#7C8A9C"
+                placeholderTextColor={C.hint}
                 value={pin}
                 onChangeText={(next) => setPin(next.replace(/\D/g, '').slice(0, 4))}
                 keyboardType="number-pad"
@@ -278,7 +282,7 @@ export default function UssdSetupScreen() {
               <TextInput
                 className={inputClass}
                 placeholder="Enter it again"
-                placeholderTextColor="#7C8A9C"
+                placeholderTextColor={C.hint}
                 value={confirm}
                 onChangeText={(next) => setConfirm(next.replace(/\D/g, '').slice(0, 4))}
                 keyboardType="number-pad"
@@ -320,7 +324,7 @@ export default function UssdSetupScreen() {
           The PIN can only be set here, in the app, where you are signed in. It can never be set over a dialled code —
           otherwise whoever was holding your phone could set one.
         </Meta>
-      </ScrollView>
-    </SafeAreaView>
+      </Sheet>
+    </Screen>
   );
 }

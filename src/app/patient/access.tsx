@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { Alert, FlatList, Pressable, ScrollView, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { ActiveAccessSession, PendingAccessRequest } from '@/features/access/accessApi';
 import { useAccessRequests } from '@/features/access/useAccessRequests';
+import { Chrome, ChromeTag, Empty, Heading, Screen, Sheet } from '@/components/design/split';
+import { BottomTabInset } from '@/constants/theme';
 import AccessEmpty from '@/features/access/AccessEmpty';
 import { explainAccessRequest, plainAccessRequest } from '@/features/ai/explain';
 import { Card, Chip, Eyebrow, Meta, PrimaryButton, SecondaryButton } from '@/components/design/primitives';
@@ -242,56 +243,77 @@ export default function AccessRequestsScreen() {
 
   if (!error && requests.length === 0 && active.length === 0) {
     return (
-      <SafeAreaView className="flex-1 bg-canvas">
-        <AccessEmpty
-          onShowCode={() => router.push('/patient/emergency')}
-          onHowItWorks={() => router.push('/patient/emergency')}
-          onEmergencyCard={() => router.push('/patient/emergency')}
-          onHistory={() => router.push('/patient/history')}
-          historyValue="None yet"
-        />
-      </SafeAreaView>
+      <Screen>
+        <Chrome title="Access" subtitle="You decide who sees your record, and for how long" />
+        <Sheet pad={false}>
+          <AccessEmpty
+            onShowCode={() => router.push('/patient/emergency')}
+            onHowItWorks={() => router.push('/patient/emergency')}
+            onEmergencyCard={() => router.push('/patient/emergency')}
+            onHistory={() => router.push('/patient/history')}
+            historyValue="None yet"
+          />
+        </Sheet>
+      </Screen>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-canvas">
-      <FlatList
-        data={requests}
-        keyExtractor={(r) => r.id}
-        contentContainerStyle={{ padding: 20, gap: 12, paddingBottom: 110 }}
-        ListHeaderComponent={
-          <View className="gap-3 pb-1">
-            <Text className="text-2xl font-semibold tracking-tight text-ink">Access</Text>
-            <Meta>You decide who sees your record, and for how long.</Meta>
-            {error ? <Text className="text-sm text-danger">{error}</Text> : null}
-
-            <Text className="pt-2 text-lg font-semibold text-ink">Who can see your record</Text>
-            {active.length === 0 ? (
-              <Card className="p-4">
-                <Text className="text-[15px] text-muted">No one has access right now.</Text>
-              </Card>
-            ) : (
-              <View className="gap-2.5">
-                {active.map((s) => (
-                  <ActiveCard key={s.id} item={s} onEnd={endAccess} />
-                ))}
-              </View>
-            )}
-
-            <View className="flex-row items-center justify-between pt-3">
-              <Text className="text-lg font-semibold text-ink">Pending requests</Text>
-              {requests.length > 0 ? <Chip tone="pending">{`${requests.length} waiting`}</Chip> : null}
-            </View>
-          </View>
+    <Screen>
+      <Chrome
+        title="Access"
+        subtitle="You decide who sees your record, and for how long"
+        right={
+          requests.length > 0 ? (
+            <ChromeTag label={`${requests.length} waiting`} tone="warn" />
+          ) : active.length > 0 ? (
+            <ChromeTag label={`${active.length} active`} tone="ok" />
+          ) : undefined
         }
-        ListEmptyComponent={
-          <Card className="p-4">
-            <Text className="text-[15px] text-muted">No one is asking for access.</Text>
-          </Card>
-        }
-        renderItem={({ item }) => <RequestCard item={item} onDecide={decide} />}
       />
-    </SafeAreaView>
+      <Sheet pad={false}>
+        <FlatList
+          data={requests}
+          keyExtractor={(r) => r.id}
+          contentContainerStyle={{ padding: 20, gap: 12, paddingBottom: BottomTabInset + 24 }}
+          scrollEnabled={false}
+          ListHeaderComponent={
+            <View className="gap-3 pb-1">
+              {error ? <Text className="text-[13px] text-danger">{error}</Text> : null}
+
+              <Heading>Who can see your record</Heading>
+              {active.length === 0 ? (
+                <Empty
+                  icon="lock"
+                  title="Nobody has access"
+                  body="Your record is private. A request arrives here, and nothing is shared until you approve it."
+                />
+              ) : (
+                <View className="gap-2.5">
+                  {active.map((s) => (
+                    <ActiveCard key={s.id} item={s} onEnd={endAccess} />
+                  ))}
+                </View>
+              )}
+
+              <View className="pt-3">
+                <Heading
+                  right={requests.length > 0 ? <Chip tone="pending">{`${requests.length} waiting`}</Chip> : undefined}>
+                  Pending requests
+                </Heading>
+              </View>
+            </View>
+          }
+          ListEmptyComponent={
+            <Empty
+              icon="inbox"
+              title="Nobody is asking"
+              body="When a health worker asks to read your record, the request shows up here with their name and reason."
+            />
+          }
+          renderItem={({ item }) => <RequestCard item={item} onDecide={decide} />}
+        />
+      </Sheet>
+    </Screen>
   );
 }

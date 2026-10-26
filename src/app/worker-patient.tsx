@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
 
 import { useAuth } from '@/features/auth/AuthProvider';
 import { accessStatus, lookupPatient, releaseAccess, requestAccess } from '@/features/worker/workerApi';
+import { C } from '@/components/design/tokens';
+import { BottomBar, Callout, Chrome, ChromeTag, Note, Screen, Sheet } from '@/components/design/split';
 import {
   patchWorkerSession, restoreWorkerSession, setWorkerSession, useWorkerSession,
 } from '@/features/worker/workerSession';
@@ -102,94 +103,131 @@ export default function WorkerPatientScreen() {
   };
 
   if (session) {
+    const waiting = session.status === 'PENDING';
+    const approved = session.status === 'APPROVED';
+    const refused = session.status === 'DENIED' || session.status === 'EXPIRED';
+
     return (
-      <SafeAreaView className="flex-1 bg-canvas">
-        <View className="flex-1 gap-4 p-6">
-          <Text className="text-3xl font-bold text-ink">{session.patientName}</Text>
-          <Text className="text-sm text-muted">{session.medrekkCode}</Text>
+      <Screen>
+        <Chrome
+          title={session.patientName}
+          subtitle={session.medrekkCode}
+          right={
+            <ChromeTag
+              label={waiting ? 'Waiting' : approved ? 'Approved' : 'Ended'}
+              tone={waiting ? 'warn' : approved ? 'ok' : 'quiet'}
+            />
+          }
+        />
 
-          {session.status === 'PENDING' ? (
-            <View className="gap-3 rounded-2xl bg-amber-50 p-4">
-              <Text className="text-base font-semibold text-amber-900">
-                Waiting for the patient to approve
-              </Text>
-              <Text className="text-sm text-amber-900">
-                Ask them to open MedRekk and check their Access tab.
-              </Text>
-              <ActivityIndicator />
-            </View>
+        <Sheet>
+          {waiting ? (
+            <Callout kicker="Their decision" title="Waiting for the patient to approve">
+              <Note>Ask them to open MedRekk and check their Access tab. This screen moves on by itself.</Note>
+              <ActivityIndicator color={C.warn} style={{ alignSelf: 'flex-start', marginTop: 4 }} />
+            </Callout>
           ) : null}
 
-          {session.status === 'APPROVED' ? (
+          {approved ? (
             <View className="gap-3">
-              <Text className="rounded-2xl bg-emerald-50 p-4 text-base text-emerald-900">
-                Approved{session.grantedUntil ? ` until ${new Date(session.grantedUntil).toLocaleTimeString()}` : ''}.
-              </Text>
-              <Pressable
-                onPress={() => router.push('/worker-encounter')}
-                className="items-center rounded-xl bg-[#0F6E56] py-4">
-                <Text className="text-base font-semibold text-white">Start encounter</Text>
-              </Pressable>
+              <Callout
+                tone="quiet"
+                kicker="Approved"
+                title={
+                  session.grantedUntil
+                    ? `You can read this record until ${new Date(session.grantedUntil).toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}`
+                    : 'You can read this record'
+                }>
+                <Note>The patient can end it at any moment, and it ends by itself when the time is up.</Note>
+              </Callout>
             </View>
           ) : null}
 
-          {session.status === 'DENIED' || session.status === 'EXPIRED' ? (
-            <Text className="rounded-2xl bg-red-50 p-4 text-base text-red-900">
-              {session.status === 'DENIED' ? 'The patient declined.' : 'This request expired.'}
-            </Text>
+          {refused ? (
+            <Callout
+              tone="danger"
+              kicker="No access"
+              title={session.status === 'DENIED' ? 'The patient declined' : 'This request expired'}>
+              <Note>Nothing was shared. You can ask again if they are happy for you to.</Note>
+            </Callout>
           ) : null}
 
-          {error ? <Text className="text-sm text-danger">{error}</Text> : null}
+          {error ? <Text className="text-[13px] text-danger">{error}</Text> : null}
 
-          <Pressable disabled={busy} onPress={() => void endAccess()} className="items-center py-3">
-            <Text className={`text-sm text-[#0F6E56] ${busy ? 'opacity-50' : ''}`}>
-              {session.status === 'APPROVED' ? 'End access and find another patient' : 'Find another patient'}
+          <Pressable disabled={busy} onPress={() => void endAccess()} className="items-center py-2">
+            <Text className={`text-[13px] font-medium text-primary ${busy ? 'opacity-50' : ''}`}>
+              {approved ? 'End access and find another patient' : 'Find another patient'}
             </Text>
           </Pressable>
-        </View>
-      </SafeAreaView>
+        </Sheet>
+
+        {approved ? (
+          <BottomBar label="Start encounter" onPress={() => router.push('/worker-encounter')} />
+        ) : null}
+      </Screen>
     );
   }
 
+  const ready = code.trim().length >= 5 && name.trim().length >= 2;
+
   return (
-    <SafeAreaView className="flex-1 bg-canvas">
-      <ScrollView contentContainerStyle={{ padding: 24, gap: 16 }}>
-        <Text className="text-3xl font-bold text-ink">Find a patient</Text>
-        <Text className="text-sm text-muted">
-          Ask the patient for their MedRekk Code and full name. They approve on their own phone.
-        </Text>
+    <Screen>
+      <Chrome title="Find a patient" subtitle="They approve on their own phone" />
 
-        <TextInput
-          value={code}
-          onChangeText={setCode}
-          autoCapitalize="characters"
-          placeholder="MRK-82941"
-          className="rounded-xl border border-line bg-surface px-4 py-3 text-base text-ink"
-        />
-        <TextInput
-          value={name}
-          onChangeText={setName}
-          placeholder="Patient's full name"
-          className="rounded-xl border border-line bg-surface px-4 py-3 text-base text-ink"
-        />
-        <TextInput
-          value={reason}
-          onChangeText={setReason}
-          placeholder="Reason"
-          className="rounded-xl border border-line bg-surface px-4 py-3 text-base text-ink"
-        />
+      <Sheet>
+        <Note>
+          Ask the patient for their MedRekk code and the full name on their record. Nothing is shared until they
+          say yes.
+        </Note>
 
-        {error ? <Text className="text-sm text-red-700">{error}</Text> : null}
+        <View className="gap-1.5">
+          <Text className="text-[13px] font-medium text-ink">MedRekk code</Text>
+          <TextInput
+            value={code}
+            onChangeText={setCode}
+            autoCapitalize="characters"
+            placeholder="MRK-82941"
+            placeholderTextColor={C.hint}
+            className="rounded-xl border border-line bg-surface px-4 py-3.5 text-base tracking-[2px] text-ink"
+          />
+        </View>
 
-        <Pressable
-          disabled={busy || code.trim().length < 5 || name.trim().length < 2}
-          onPress={() => void start()}
-          className={`items-center rounded-xl bg-[#0F6E56] py-4 ${busy ? 'opacity-50' : ''}`}>
-          <Text className="text-base font-semibold text-white">
-            {busy ? 'Requesting...' : 'Request access'}
-          </Text>
-        </Pressable>
-      </ScrollView>
-    </SafeAreaView>
+        <View className="gap-1.5">
+          <Text className="text-[13px] font-medium text-ink">Full name</Text>
+          <TextInput
+            value={name}
+            onChangeText={setName}
+            placeholder="As it appears on their record"
+            placeholderTextColor={C.hint}
+            className="rounded-xl border border-line bg-surface px-4 py-3.5 text-base text-ink"
+          />
+        </View>
+
+        <View className="gap-1.5">
+          <Text className="text-[13px] font-medium text-ink">Why you need it</Text>
+          <TextInput
+            value={reason}
+            onChangeText={setReason}
+            placeholder="Clinic visit"
+            placeholderTextColor={C.hint}
+            className="rounded-xl border border-line bg-surface px-4 py-3.5 text-base text-ink"
+          />
+          <Note>The patient sees this, so say something they will recognise.</Note>
+        </View>
+
+        {error ? <Text className="text-[13px] text-danger">{error}</Text> : null}
+      </Sheet>
+
+      <BottomBar
+        label="Request access"
+        busy={busy}
+        disabled={!ready}
+        onPress={() => void start()}
+        note="They decide what you see, and for how long."
+      />
+    </Screen>
   );
 }

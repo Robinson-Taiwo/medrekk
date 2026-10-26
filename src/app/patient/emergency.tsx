@@ -56,11 +56,11 @@ export default function EmergencyProfileScreen() {
 
   if (!profile) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center gap-3 bg-white p-6 dark:bg-black">
+      <SafeAreaView className="flex-1 items-center justify-center gap-3 bg-canvas p-6">
         {error ? (
           <View className="items-center gap-3">
-            <Text className="text-center text-sm text-red-700">{error}</Text>
-            <Pressable onPress={() => void load()} className="rounded-xl bg-[#0F6E56] px-5 py-3">
+            <Text className="text-center text-sm text-danger">{error}</Text>
+            <Pressable onPress={() => void load()} className="rounded-xl bg-primary px-5 py-3">
               <Text className="font-semibold text-white">Try again</Text>
             </Pressable>
           </View>
@@ -98,7 +98,7 @@ export default function EmergencyProfileScreen() {
   if (!offlineSavedAt) return card;
 
   return (
-    <View className="flex-1 bg-white dark:bg-black">
+    <View className="flex-1 bg-night">
       <OfflineBanner savedAt={offlineSavedAt} />
       {card}
     </View>

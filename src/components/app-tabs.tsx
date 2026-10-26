@@ -4,6 +4,7 @@ import { Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/features/auth/AuthProvider';
+import { C } from '@/components/design/tokens';
 
 type IconName = keyof typeof Feather.glyphMap;
 
@@ -77,8 +78,10 @@ function TabBar({ state, navigation, tabs }: TabBarProps) {
   const insets = useSafeAreaInsets();
 
   return (
+    /* Dark, because it is part of the frame rather than part of the record. The sheet above
+       it has a rounded foot, so the bar reads as the surface the record is resting on. */
     <View
-      className="flex-row items-start justify-around border-t border-line bg-surface px-2.5 pt-2.5"
+      className="flex-row items-start justify-around bg-night px-2.5 pt-2.5"
       style={{ paddingBottom: Math.max(insets.bottom, 10) }}>
       {state.routes.map((route, index) => {
         const tab = tabs.find((t) => t.name === route.name);
@@ -100,12 +103,14 @@ function TabBar({ state, navigation, tabs }: TabBarProps) {
             accessibilityLabel={tab.label}
             className="w-[64px] items-center gap-1">
             <View
-              className={`h-8 w-14 items-center justify-center rounded-[12px] ${focused ? 'bg-primary-soft' : ''}`}>
-              <Feather name={tab.icon} size={21} color={focused ? '#0F6E56' : '#5D6C82'} />
+              className="h-8 w-14 items-center justify-center rounded-[12px]"
+              style={focused ? { backgroundColor: 'rgba(47,190,143,0.16)' } : undefined}>
+              <Feather name={tab.icon} size={21} color={focused ? C.glow : C.mistFaint} />
             </View>
             <Text
               numberOfLines={1}
-              className={`text-[10.5px] ${focused ? 'font-semibold text-primary' : 'font-medium text-muted'}`}>
+              className="text-[10.5px]"
+              style={{ color: focused ? C.glow : C.mistFaint, fontWeight: focused ? '600' : '500' }}>
               {tab.label}
             </Text>
           </Pressable>

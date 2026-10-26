@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { api } from "@/services/api";
+import { C } from '@/components/design/tokens';
 import { BLOOD_GROUPS, PROFILE_PATH, type BloodGroup, type EmergencyProfileData } from "./types";
 
 const toLines = (items: string[]): string => items.join("\n");
@@ -10,18 +11,18 @@ const fromLines = (text: string): string[] =>
   text.split(/[\n,]/).map((s) => s.trim()).filter((s) => s.length > 0);
 
 const inputClass =
-  "rounded-xl border border-gray-300 px-4 py-3 text-base text-gray-900 dark:border-gray-700 dark:text-white";
+  "rounded-xl border border-line px-4 py-3 text-base text-muted";
 
 function ListField(props: { label: string; value: string; onChange: (v: string) => void; placeholder: string }) {
   return (
     <View className="gap-1">
-      <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">{props.label}</Text>
+      <Text className="text-sm font-medium text-muted">{props.label}</Text>
       <TextInput
         className={inputClass}
         style={{ minHeight: 64, textAlignVertical: "top" }}
         multiline
         placeholder={props.placeholder}
-        placeholderTextColor="#7C8A9C"
+        placeholderTextColor={C.hint}
         value={props.value}
         onChangeText={props.onChange}
         autoCapitalize="sentences"
@@ -86,16 +87,16 @@ export default function EmergencyEditor(props: {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white dark:bg-black">
+    <SafeAreaView className="flex-1 bg-white">
       <ScrollView contentContainerStyle={{ padding: 24, gap: 14 }} keyboardShouldPersistTaps="handled">
-        <Text className="text-3xl font-bold text-gray-900 dark:text-white">Edit emergency profile</Text>
-        <Text className="text-sm text-gray-500 dark:text-gray-400">
+        <Text className="text-3xl font-bold text-muted">Edit emergency profile</Text>
+        <Text className="text-sm text-muted">
           A responder can see this without your approval. Include only what matters in an emergency. Each access is
           logged. One item per line. Saving marks this profile self-reported
           {p.verifiedByName ? " and clears the review below" : ""}.
         </Text>
         {p.verifiedByName ? (
-          <Text className="text-xs text-gray-500 dark:text-gray-400">Currently reviewed by {p.verifiedByName}.</Text>
+          <Text className="text-xs text-muted">Currently reviewed by {p.verifiedByName}.</Text>
         ) : null}
 
         <ListField label="Critical allergies" value={allergies} onChange={setAllergies} placeholder="Penicillin" />
@@ -104,27 +105,27 @@ export default function EmergencyEditor(props: {
         <ListField label="Implanted devices" value={devices} onChange={setDevices} placeholder="Pacemaker" />
         <ListField label="Important warnings" value={warnings} onChange={setWarnings} placeholder="Check blood glucose" />
 
-        <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">Blood group</Text>
+        <Text className="text-sm font-medium text-muted">Blood group</Text>
         <View className="flex-row flex-wrap gap-2">
           {BLOOD_GROUPS.map((g) => (
             <Pressable
               key={g}
               onPress={() => setBlood(blood === g ? null : g)}
               className={`rounded-xl border px-4 py-2 ${
-                blood === g ? "border-[#0F6E56] bg-[#0F6E56]" : "border-gray-300 dark:border-gray-700"
+                blood === g ? "border-primary bg-primary" : "border-line"
               }`}
             >
-              <Text className={blood === g ? "font-semibold text-white" : "text-gray-900 dark:text-white"}>{g}</Text>
+              <Text className={blood === g ? "font-semibold text-white" : "text-muted"}>{g}</Text>
             </Pressable>
           ))}
         </View>
 
-        <Text className="mt-2 text-sm font-medium text-gray-700 dark:text-gray-300">Emergency contact</Text>
-        <TextInput className={inputClass} placeholder="Name" placeholderTextColor="#7C8A9C" value={cName} onChangeText={setCName} />
+        <Text className="mt-2 text-sm font-medium text-muted">Emergency contact</Text>
+        <TextInput className={inputClass} placeholder="Name" placeholderTextColor={C.hint} value={cName} onChangeText={setCName} />
         <TextInput
           className={inputClass}
           placeholder="Phone, e.g. +2348000000000"
-          placeholderTextColor="#7C8A9C"
+          placeholderTextColor={C.hint}
           value={cPhone}
           onChangeText={setCPhone}
           keyboardType="phone-pad"
@@ -132,22 +133,22 @@ export default function EmergencyEditor(props: {
         <TextInput
           className={inputClass}
           placeholder="Relationship, e.g. Brother"
-          placeholderTextColor="#7C8A9C"
+          placeholderTextColor={C.hint}
           value={cRel}
           onChangeText={setCRel}
         />
 
-        {error ? <Text className="text-sm text-red-700">{error}</Text> : null}
+        {error ? <Text className="text-sm text-danger">{error}</Text> : null}
 
         <Pressable
           onPress={() => void save()}
           disabled={busy}
-          className={`items-center rounded-xl bg-[#0F6E56] py-4 ${busy ? "opacity-60" : ""}`}
+          className={`items-center rounded-xl bg-primary py-4 ${busy ? "opacity-60" : ""}`}
         >
           {busy ? <ActivityIndicator color="#fff" /> : <Text className="text-base font-semibold text-white">Save</Text>}
         </Pressable>
         <Pressable onPress={props.onCancel} disabled={busy} className="items-center py-3">
-          <Text className="text-base text-gray-600 dark:text-gray-300">Cancel</Text>
+          <Text className="text-base text-muted">Cancel</Text>
         </Pressable>
       </ScrollView>
     </SafeAreaView>

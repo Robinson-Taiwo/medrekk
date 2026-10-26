@@ -9,6 +9,8 @@ import { deleteModel, downloadModel, refreshModelStatus, useModelStatus } from '
 import { deleteWhisper, downloadWhisper, refreshWhisperStatus, useWhisperStatus, type WhisperStatus } from '@/features/ai/whisperStore';
 import { Card, Meta } from '@/components/design/primitives';
 import { BottomTabInset } from '@/constants/theme';
+import { Chrome, Note, Screen, Sheet } from '@/components/design/split';
+import { C } from '@/components/design/tokens';
 
 interface ModelCardProps {
   label: string;
@@ -36,7 +38,7 @@ function ModelCard({ label, approxMb, purpose, withoutIt, status, onDownload, on
           <Text className="text-[15px] font-medium text-ink">{label}</Text>
           {status.state === 'READY' ? (
             <View className="h-6 flex-row items-center gap-1.5 rounded-full bg-primary-soft px-2.5">
-              <Feather name="check" size={11} color="#0F6E56" />
+              <Feather name="check" size={11} color={C.primary} />
               <Text className="text-xs font-medium text-primary">Installed</Text>
             </View>
           ) : (
@@ -93,12 +95,15 @@ export default function WorkerModelScreen() {
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-canvas" edges={['top', 'left', 'right']}>
-      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: BottomTabInset + 24, gap: 14 }} showsVerticalScrollIndicator={false}>
-        <View className="gap-1">
-          <Text className="text-2xl font-semibold tracking-tight text-ink">On this phone</Text>
-          <Meta>Both models run on the phone itself. Nothing you record is sent anywhere while they work. Download them over Wi-Fi if you can.</Meta>
-        </View>
+    <Screen>
+      <Chrome
+        title="On this phone"
+        subtitle="Both models run on the handset itself"
+      />
+      <Sheet>
+        <Note>
+          Nothing you record is sent anywhere while they work. Download them over Wi-Fi if you can.
+        </Note>
 
         <ModelCard
           label={MODEL_LABEL}
@@ -121,7 +126,7 @@ export default function WorkerModelScreen() {
         />
 
         <Meta>Together they take about {MODEL_APPROX_MB + WHISPER_APPROX_MB} MB. Either can be removed at any time.</Meta>
-      </ScrollView>
-    </SafeAreaView>
+      </Sheet>
+    </Screen>
   );
 }

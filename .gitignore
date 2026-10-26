@@ -42,3 +42,11 @@ example
 /ios
 /android
 .env
+
+# Firebase. The service account key is a private key with admin rights on the project and
+# must never be committed — it belongs in EAS credentials, not in the repo. google-services.json
+# is not secret in the same way (it ships inside the APK) but is per-project config, so it is
+# supplied at build time rather than tracked here.
+*firebase-adminsdk*.json
+google-services.json
+GoogleService-Info.plist

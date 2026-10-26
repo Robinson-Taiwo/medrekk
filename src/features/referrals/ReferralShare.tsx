@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, Share, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { ActivityIndicator, Pressable, Share, Text, View } from "react-native";
 import QRCode from "react-native-qrcode-svg";
 
 import { api } from "@/services/api";
 import { BADGE, STATUS_LABEL, effectiveStatus, prettyCategory, referralUrl, WEB_URL, type Referral } from "./types";
+import { Chrome, Screen, Sheet } from "@/components/design/split";
 
 export default function ReferralShare(props: {
   referral: Referral;
@@ -42,83 +42,80 @@ export default function ReferralShare(props: {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white dark:bg-black">
-      <ScrollView contentContainerStyle={{ padding: 24, gap: 14 }}>
-        <Pressable onPress={props.onBack} className="self-start py-1">
-          <Text className="text-base text-[#0F6E56]">Back</Text>
-        </Pressable>
-        <Text className="text-3xl font-bold text-gray-900 dark:text-white">Referral</Text>
+    <Screen>
+      <Chrome title="Referral" onBack={props.onBack} />
+      <Sheet>
 
         {status === "ACTIVE" ? (
-          <View className="items-center gap-3 rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800">
+          <View className="items-center gap-3 rounded-2xl border border-line bg-white p-5">
             {WEB_URL ? (
               <QRCode value={url} size={220} />
             ) : (
-              <Text className="text-sm text-red-700">EXPO_PUBLIC_WEB_URL is not set in the app's .env.</Text>
+              <Text className="text-sm text-danger">EXPO_PUBLIC_WEB_URL is not set in the app's .env.</Text>
             )}
-            <Text className="text-center text-xs text-gray-500">
+            <Text className="text-center text-xs text-muted">
               The QR holds a link only, never medical data. Whoever opens it sees just the items below.
             </Text>
           </View>
         ) : (
-          <View className="rounded-2xl bg-gray-100 p-4 dark:bg-gray-900">
-            <Text className="text-base font-semibold text-gray-900 dark:text-white">
+          <View className="rounded-2xl bg-fill p-4">
+            <Text className="text-base font-semibold text-muted">
               {status === "REVOKED" ? "You cancelled this referral" : "This referral has expired"}
             </Text>
-            <Text className="text-sm text-gray-600 dark:text-gray-300">The link no longer shows anything.</Text>
+            <Text className="text-sm text-muted">The link no longer shows anything.</Text>
           </View>
         )}
 
-        <View className="gap-1 rounded-2xl border border-gray-200 p-4 dark:border-gray-800">
-          <Text className="text-xs font-semibold uppercase tracking-widest text-gray-500">To</Text>
-          <Text className="text-base text-gray-900 dark:text-white">{referral.destinationFacility ?? "Any provider"}</Text>
-          <Text className="mt-2 text-xs font-semibold uppercase tracking-widest text-gray-500">Reason</Text>
-          <Text className="text-base text-gray-900 dark:text-white">{referral.reason}</Text>
+        <View className="gap-1 rounded-2xl border border-line p-4">
+          <Text className="text-xs font-semibold uppercase tracking-widest text-muted">To</Text>
+          <Text className="text-base text-muted">{referral.destinationFacility ?? "Any provider"}</Text>
+          <Text className="mt-2 text-xs font-semibold uppercase tracking-widest text-muted">Reason</Text>
+          <Text className="text-base text-muted">{referral.reason}</Text>
           {referral.note ? (
             <>
-              <Text className="mt-2 text-xs font-semibold uppercase tracking-widest text-gray-500">Note</Text>
-              <Text className="text-base text-gray-900 dark:text-white">{referral.note}</Text>
+              <Text className="mt-2 text-xs font-semibold uppercase tracking-widest text-muted">Note</Text>
+              <Text className="text-base text-muted">{referral.note}</Text>
             </>
           ) : null}
-          <Text className="mt-2 text-xs text-gray-500">Expires {new Date(referral.expiresAt).toLocaleString()}</Text>
+          <Text className="mt-2 text-xs text-muted">Expires {new Date(referral.expiresAt).toLocaleString()}</Text>
         </View>
 
-        <Text className="text-lg font-semibold text-gray-900 dark:text-white">What this referral shares</Text>
+        <Text className="text-lg font-semibold text-muted">What this referral shares</Text>
         {referral.items.map((item) => {
           const badge = BADGE[item.status] ?? BADGE.UNVERIFIED;
           return (
-            <View key={item.claimId} className="gap-1 rounded-xl border border-gray-200 p-3 dark:border-gray-800">
-              <Text className="text-base text-gray-900 dark:text-white">{item.value}</Text>
+            <View key={item.claimId} className="gap-1 rounded-xl border border-line p-3">
+              <Text className="text-base text-muted">{item.value}</Text>
               <View className="flex-row items-center gap-2">
                 <View className={`rounded-full px-2 py-0.5 ${badge.bg}`}>
                   <Text className={`text-xs font-medium ${badge.text}`}>{STATUS_LABEL[item.status] ?? item.status}</Text>
                 </View>
-                <Text className="text-xs text-gray-500">{prettyCategory(item.scope)}</Text>
+                <Text className="text-xs text-muted">{prettyCategory(item.scope)}</Text>
               </View>
             </View>
           );
         })}
-        <Text className="text-xs text-gray-500">
+        <Text className="text-xs text-muted">
           This is a frozen snapshot from when you created it. Later changes to your record do not appear in it.
         </Text>
 
-        {error ? <Text className="text-sm text-red-700">{error}</Text> : null}
+        {error ? <Text className="text-sm text-danger">{error}</Text> : null}
 
         {status === "ACTIVE" ? (
           <>
-            <Pressable onPress={() => void share()} className="items-center rounded-xl bg-[#0F6E56] py-4">
+            <Pressable onPress={() => void share()} className="items-center rounded-xl bg-primary py-4">
               <Text className="text-base font-semibold text-white">Share link</Text>
             </Pressable>
             <Pressable
               onPress={() => void revoke()}
               disabled={busy}
-              className="items-center rounded-xl border border-red-300 py-4"
+              className="items-center rounded-xl border border-danger py-4"
             >
-              {busy ? <ActivityIndicator /> : <Text className="text-base font-semibold text-red-700">Cancel this referral</Text>}
+              {busy ? <ActivityIndicator /> : <Text className="text-base font-semibold text-danger">Cancel this referral</Text>}
             </Pressable>
           </>
         ) : null}
-      </ScrollView>
-    </SafeAreaView>
+      </Sheet>
+    </Screen>
   );
 }

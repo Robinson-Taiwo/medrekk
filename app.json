@@ -18,15 +18,17 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false,
+      "googleServicesFile": "./google-services.json",
+      "package": "com.taiwo101.medrekk",
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO",
         "android.permission.MODIFY_AUDIO_SETTINGS",
         "android.permission.FOREGROUND_SERVICE",
-        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+        "android.permission.POST_NOTIFICATIONS"
       ],
-      "package": "com.taiwo101.medrekk"
+      "predictiveBackGestureEnabled": false
     },
     "web": {
       "output": "static",
@@ -63,6 +65,14 @@
         {
           "photosPermission": "MedRekk needs your photos to read a written note or result into the record.",
           "cameraPermission": "MedRekk needs the camera to photograph a written note or result."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/android-icon-monochrome.png",
+          "color": "#142D2A",
+          "defaultChannel": "access"
         }
       ]
     ],

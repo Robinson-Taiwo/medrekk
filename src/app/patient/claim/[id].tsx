@@ -8,6 +8,8 @@ import { api } from '@/services/api';
 import { fetchVerifications, type VerificationEventView } from '@/features/verification/verificationApi';
 import { Card, Meta } from '@/components/design/primitives';
 import { explainSections, type ExplanationSections } from '@/features/ai/explain';
+import { Chrome, Screen, Sheet } from '@/components/design/split';
+import { C } from '@/components/design/tokens';
 
 interface Claim {
   id: string;
@@ -45,10 +47,10 @@ const STATUS_EXPLAIN: Record<string, string> = {
 };
 
 const STATUS_STYLE: Record<string, { bg: string; fg: string; icon: keyof typeof Feather.glyphMap; hex: string }> = {
-  UNVERIFIED: { bg: 'bg-neutral-soft', fg: 'text-muted', icon: 'help-circle', hex: '#5D6C82' },
-  SELF_REPORTED: { bg: 'bg-warn-soft', fg: 'text-warn', icon: 'user', hex: '#B45309' },
-  EVIDENCE_BACKED: { bg: 'bg-primary-soft', fg: 'text-primary', icon: 'paperclip', hex: '#0F6E56' },
-  CLINICALLY_VERIFIED: { bg: 'bg-primary-soft', fg: 'text-primary', icon: 'check', hex: '#0F6E56' },
+  UNVERIFIED: { bg: 'bg-neutral-soft', fg: 'text-muted', icon: 'help-circle', hex: C.muted },
+  SELF_REPORTED: { bg: 'bg-warn-soft', fg: 'text-warn', icon: 'user', hex: C.warn },
+  EVIDENCE_BACKED: { bg: 'bg-primary-soft', fg: 'text-primary', icon: 'paperclip', hex: C.primary },
+  CLINICALLY_VERIFIED: { bg: 'bg-primary-soft', fg: 'text-primary', icon: 'check', hex: C.primary },
 };
 
 const formatDate = (iso: string): string =>
@@ -169,11 +171,9 @@ export default function ClaimDetailScreen() {
   const others = origin.filter((o) => o.kind !== 'ORIGINAL_CAPTURE');
 
   return (
-    <SafeAreaView className="flex-1 bg-canvas" edges={['top', 'left', 'right']}>
-      <ScrollView contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: 40 }}>
-        <Pressable onPress={() => router.navigate('/record')} hitSlop={8} className="h-10 w-10 justify-center">
-          <Feather name="chevron-left" size={24} color="#142D2A" />
-        </Pressable>
+    <Screen>
+      <Chrome title={"Entry"} subtitle={claim.category.replace(/_/g, " ").toLowerCase()} onBack={() => router.navigate('/record')} />
+      <Sheet>
 
         <View className="gap-2">
           <Text className="text-[11px] font-medium uppercase tracking-wider text-muted">
@@ -210,7 +210,7 @@ export default function ClaimDetailScreen() {
 
             {sections.unclear ? (
               <View className="flex-row items-start gap-2.5 rounded-[10px] bg-warn-soft p-3">
-                <Feather name="help-circle" size={15} color="#B45309" />
+                <Feather name="help-circle" size={15} color={C.warn} />
                 <Text className="flex-1 text-[13px] leading-[19px] text-warn">{sections.unclear}</Text>
               </View>
             ) : null}
@@ -233,7 +233,7 @@ export default function ClaimDetailScreen() {
                 <Feather
                   name={onCard ? 'alert-triangle' : 'shield'}
                   size={16}
-                  color={onCard ? '#CE2B2B' : '#5D6C82'}
+                  color={onCard ? C.danger : C.muted}
                 />
               </View>
               <View className="flex-1 gap-0.5">
@@ -264,13 +264,13 @@ export default function ClaimDetailScreen() {
           <Pressable onPress={() => router.push(`/patient/visit/${claim.encounterId}`)}>
             <Card className="flex-row items-center gap-3 p-3.5">
               <View className="h-9 w-9 items-center justify-center rounded-[10px] bg-primary-soft">
-                <Feather name="file-text" size={16} color="#0F6E56" />
+                <Feather name="file-text" size={16} color={C.primary} />
               </View>
               <View className="flex-1 gap-0.5">
                 <Text className="text-sm font-medium text-ink">See the whole visit</Text>
                 <Meta>The note this was taken from, and everything else recorded that day</Meta>
               </View>
-              <Feather name="chevron-right" size={18} color="#5D6C82" />
+              <Feather name="chevron-right" size={18} color={C.muted} />
             </Card>
           </Pressable>
         ) : null}
@@ -279,7 +279,7 @@ export default function ClaimDetailScreen() {
           <Text className="text-[11px] font-medium uppercase tracking-wider text-muted">Where this came from</Text>
           <View className="flex-row items-center gap-3">
             <View className="h-9 w-9 items-center justify-center rounded-[10px] bg-fill">
-              <Feather name="user" size={16} color="#142D2A" />
+              <Feather name="user" size={16} color={C.ink} />
             </View>
             <View className="flex-1 gap-0.5">
               <Text className="text-sm font-medium text-ink">{claim.source}</Text>
@@ -346,14 +346,14 @@ export default function ClaimDetailScreen() {
             className={`h-[52px] flex-row items-center justify-center gap-2 rounded-xl border border-line bg-surface ${
               busy ? 'opacity-50' : ''
             }`}>
-            <Feather name="trash-2" size={17} color="#CE2B2B" />
+            <Feather name="trash-2" size={17} color={C.danger} />
             <Text className="text-base font-medium text-danger">
               {busy ? 'Removing…' : 'Remove from my record'}
             </Text>
           </Pressable>
           <Meta>This is your record. You decide what stays in it.</Meta>
         </View>
-      </ScrollView>
-    </SafeAreaView>
+      </Sheet>
+    </Screen>
   );
 }

@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { ActivityIndicator, Pressable, Text, TextInput, View } from "react-native";
 
 import { api } from "@/services/api";
+import { C } from '@/components/design/tokens';
+import { Chrome, Screen, Sheet } from "@/components/design/split";
 import {
   BADGE,
   EXPIRY_OPTIONS,
@@ -13,7 +14,7 @@ import {
 } from "./types";
 
 const inputClass =
-  "rounded-xl border border-gray-300 px-4 py-3 text-base text-gray-900 dark:border-gray-700 dark:text-white";
+  "rounded-xl border border-line px-4 py-3 text-base text-muted";
 
 export default function ReferralCreate(props: { onCancel: () => void; onCreated: (r: Referral) => void }) {
   const [claims, setClaims] = useState<PickableClaim[] | null>(null);
@@ -66,92 +67,90 @@ export default function ReferralCreate(props: { onCancel: () => void; onCreated:
 
   if (preview) {
     return (
-      <SafeAreaView className="flex-1 bg-white dark:bg-black">
-        <ScrollView contentContainerStyle={{ padding: 24, gap: 14 }}>
-          <Text className="text-3xl font-bold text-gray-900 dark:text-white">Check before sharing</Text>
-          <Text className="text-sm text-gray-500 dark:text-gray-400">
-            This is exactly what the receiving provider will see. Nothing else from your record is included.
-          </Text>
-          <View className="gap-1 rounded-2xl border border-gray-200 p-4 dark:border-gray-800">
-            <Text className="text-base text-gray-900 dark:text-white">To: {destination.trim() || "Any provider"}</Text>
-            <Text className="text-base text-gray-900 dark:text-white">Reason: {reason.trim()}</Text>
-            {note.trim() ? <Text className="text-base text-gray-900 dark:text-white">Note: {note.trim()}</Text> : null}
-            <Text className="text-sm text-gray-500">Expires in {days} day{days === 1 ? "" : "s"}</Text>
+      <Screen>
+        <Chrome title="Check before sharing" subtitle="Exactly what the provider will see" />
+        <Sheet>
+          <View className="gap-1 rounded-2xl border border-line p-4">
+            <Text className="text-base text-muted">To: {destination.trim() || "Any provider"}</Text>
+            <Text className="text-base text-muted">Reason: {reason.trim()}</Text>
+            {note.trim() ? <Text className="text-base text-muted">Note: {note.trim()}</Text> : null}
+            <Text className="text-sm text-muted">Expires in {days} day{days === 1 ? "" : "s"}</Text>
           </View>
           {chosen.map((c) => {
             const badge = BADGE[c.status] ?? BADGE.UNVERIFIED;
             return (
-              <View key={c.id} className="gap-1 rounded-xl border border-gray-200 p-3 dark:border-gray-800">
-                <Text className="text-base text-gray-900 dark:text-white">{c.value}</Text>
+              <View key={c.id} className="gap-1 rounded-xl border border-line p-3">
+                <Text className="text-base text-muted">{c.value}</Text>
                 <View className="flex-row items-center gap-2">
                   <View className={`rounded-full px-2 py-0.5 ${badge.bg}`}>
                     <Text className={`text-xs font-medium ${badge.text}`}>{STATUS_LABEL[c.status] ?? c.status}</Text>
                   </View>
-                  <Text className="text-xs text-gray-500">{prettyCategory(c.category)}</Text>
+                  <Text className="text-xs text-muted">{prettyCategory(c.category)}</Text>
                 </View>
               </View>
             );
           })}
-          {error ? <Text className="text-sm text-red-700">{error}</Text> : null}
+          {error ? <Text className="text-sm text-danger">{error}</Text> : null}
           <Pressable
             onPress={() => void create()}
             disabled={busy}
-            className={`items-center rounded-xl bg-[#0F6E56] py-4 ${busy ? "opacity-60" : ""}`}
+            className={`items-center rounded-xl bg-primary py-4 ${busy ? "opacity-60" : ""}`}
           >
             {busy ? <ActivityIndicator color="#fff" /> : <Text className="text-base font-semibold text-white">Create referral</Text>}
           </Pressable>
           <Pressable onPress={() => setPreview(false)} disabled={busy} className="items-center py-3">
-            <Text className="text-base text-gray-600 dark:text-gray-300">Edit</Text>
+            <Text className="text-base text-muted">Edit</Text>
           </Pressable>
-        </ScrollView>
-      </SafeAreaView>
+        </Sheet>
+      </Screen>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white dark:bg-black">
-      <ScrollView contentContainerStyle={{ padding: 24, gap: 12 }} keyboardShouldPersistTaps="handled">
-        <Pressable onPress={props.onCancel} className="self-start py-1">
-          <Text className="text-base text-[#0F6E56]">Cancel</Text>
+    <Screen>
+      <Chrome title="New referral" onBack={props.onCancel} />
+      <Sheet>
+        <Pressable onPress={props.onCancel} className="hidden">
+          <Text className="text-base text-primary">Cancel</Text>
         </Pressable>
-        <Text className="text-3xl font-bold text-gray-900 dark:text-white">New referral</Text>
+        <Text className="text-3xl font-bold text-muted">New referral</Text>
 
-        <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">Destination (optional)</Text>
-        <TextInput className={inputClass} placeholder="e.g. General Hospital" placeholderTextColor="#7C8A9C" value={destination} onChangeText={setDestination} />
+        <Text className="text-sm font-medium text-muted">Destination (optional)</Text>
+        <TextInput className={inputClass} placeholder="e.g. General Hospital" placeholderTextColor={C.hint} value={destination} onChangeText={setDestination} />
 
-        <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">Reason for referral</Text>
-        <TextInput className={inputClass} placeholder="e.g. Specialist review" placeholderTextColor="#7C8A9C" value={reason} onChangeText={setReason} />
+        <Text className="text-sm font-medium text-muted">Reason for referral</Text>
+        <TextInput className={inputClass} placeholder="e.g. Specialist review" placeholderTextColor={C.hint} value={reason} onChangeText={setReason} />
 
-        <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">Note (optional)</Text>
+        <Text className="text-sm font-medium text-muted">Note (optional)</Text>
         <TextInput
           className={inputClass}
           style={{ minHeight: 64, textAlignVertical: "top" }}
           multiline
           placeholder="Anything the provider should know"
-          placeholderTextColor="#7C8A9C"
+          placeholderTextColor={C.hint}
           value={note}
           onChangeText={setNote}
         />
 
-        <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">Link stays valid for</Text>
+        <Text className="text-sm font-medium text-muted">Link stays valid for</Text>
         <View className="flex-row flex-wrap gap-2">
           {EXPIRY_OPTIONS.map((o) => (
             <Pressable
               key={o.days}
               onPress={() => setDays(o.days)}
               className={`rounded-xl border px-4 py-2 ${
-                days === o.days ? "border-[#0F6E56] bg-[#0F6E56]" : "border-gray-300 dark:border-gray-700"
+                days === o.days ? "border-primary bg-primary" : "border-line"
               }`}
             >
-              <Text className={days === o.days ? "font-semibold text-white" : "text-gray-900 dark:text-white"}>{o.label}</Text>
+              <Text className={days === o.days ? "font-semibold text-white" : "text-muted"}>{o.label}</Text>
             </Pressable>
           ))}
         </View>
 
-        <Text className="mt-2 text-lg font-semibold text-gray-900 dark:text-white">What to include</Text>
+        <Text className="mt-2 text-lg font-semibold text-muted">What to include</Text>
         {!claims && !error ? <ActivityIndicator /> : null}
         {claims && claims.length === 0 ? (
-          <Text className="text-sm text-gray-500">Your record is empty. Add information in the Record tab first.</Text>
+          <Text className="text-sm text-muted">Your record is empty. Add information in the Record tab first.</Text>
         ) : null}
         {(claims ?? []).map((c) => {
           const on = picked.includes(c.id);
@@ -161,30 +160,30 @@ export default function ReferralCreate(props: { onCancel: () => void; onCreated:
               key={c.id}
               onPress={() => toggle(c.id)}
               className={`flex-row items-center gap-3 rounded-xl border p-3 ${
-                on ? "border-[#0F6E56] bg-emerald-50 dark:bg-emerald-950" : "border-gray-200 dark:border-gray-800"
+                on ? "border-primary bg-primary-soft" : "border-line"
               }`}
             >
-              <View className={`h-6 w-6 items-center justify-center rounded-md border ${on ? "border-[#0F6E56] bg-[#0F6E56]" : "border-gray-400"}`}>
+              <View className={`h-6 w-6 items-center justify-center rounded-md border ${on ? "border-primary bg-primary" : "border-line"}`}>
                 {on ? <Text className="text-xs font-bold text-white">✓</Text> : null}
               </View>
               <View className="flex-1 gap-1">
-                <Text className="text-base text-gray-900 dark:text-white">{c.value}</Text>
+                <Text className="text-base text-muted">{c.value}</Text>
                 <View className="flex-row items-center gap-2">
                   <View className={`rounded-full px-2 py-0.5 ${badge.bg}`}>
                     <Text className={`text-xs font-medium ${badge.text}`}>{STATUS_LABEL[c.status] ?? c.status}</Text>
                   </View>
-                  <Text className="text-xs text-gray-500">{prettyCategory(c.category)}</Text>
+                  <Text className="text-xs text-muted">{prettyCategory(c.category)}</Text>
                 </View>
               </View>
             </Pressable>
           );
         })}
 
-        {error ? <Text className="text-sm text-red-700">{error}</Text> : null}
-        <Pressable onPress={goPreview} className="items-center rounded-xl bg-[#0F6E56] py-4">
+        {error ? <Text className="text-sm text-danger">{error}</Text> : null}
+        <Pressable onPress={goPreview} className="items-center rounded-xl bg-primary py-4">
           <Text className="text-base font-semibold text-white">Preview</Text>
         </Pressable>
-      </ScrollView>
-    </SafeAreaView>
+      </Sheet>
+    </Screen>
   );
 }

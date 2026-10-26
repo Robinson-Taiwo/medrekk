@@ -1,5 +1,6 @@
-import { Linking, Pressable, ScrollView, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Linking, Pressable, Text, View } from 'react-native';
+import { C } from '@/components/design/tokens';
+import { Chrome, Screen, Sheet } from '@/components/design/split';
 import Feather from '@expo/vector-icons/Feather';
 
 import type { EmergencyProfileData } from './types';
@@ -63,14 +64,17 @@ export default function EmergencyCard({ profile, onEdit, offCardAllergies = [], 
   const contact = profile.emergencyContact;
 
   return (
-    <SafeAreaView className="flex-1 bg-ink">
-      <ScrollView contentContainerStyle={{ padding: 20, gap: 12, paddingBottom: 40 }}>
-        <View className="flex-row items-center justify-between">
-          <Text className="text-base font-semibold text-white">Emergency card</Text>
-          <Pressable onPress={onEdit} className="h-10 justify-center rounded-[10px] bg-white/10 px-3">
-            <Text className="text-[13px] font-medium text-white">Edit</Text>
+    <Screen>
+      <Chrome
+        title="Emergency card"
+        subtitle="What a responder can read without your approval"
+        right={
+          <Pressable onPress={onEdit} className="h-10 justify-center rounded-xl bg-white/10 px-3.5">
+            <Text className="text-[13px] font-medium text-mist">Edit</Text>
           </Pressable>
-        </View>
+        }
+      />
+      <Sheet>
 
         <View className="gap-3 rounded-[18px] bg-surface p-4">
           <View className="flex-row items-start justify-between">
@@ -117,13 +121,13 @@ export default function EmergencyCard({ profile, onEdit, offCardAllergies = [], 
               onPress={onReviewAllergies}
               disabled={!onReviewAllergies}
               className="flex-row items-center gap-2.5 rounded-xl border border-dashed border-line px-3.5 py-3">
-              <Feather name="info" size={15} color="#B45309" />
+              <Feather name="info" size={15} color={C.warn} />
               <Text className="flex-1 text-[13px] leading-[19px] text-muted">
                 {offCardAllergies.length === 1
                   ? '1 allergy in your record is not on this card.'
                   : `${offCardAllergies.length} allergies in your record are not on this card.`}
               </Text>
-              {onReviewAllergies ? <Feather name="chevron-right" size={16} color="#5D6C82" /> : null}
+              {onReviewAllergies ? <Feather name="chevron-right" size={16} color={C.muted} /> : null}
             </Pressable>
           ) : null}
         </View>
@@ -154,7 +158,7 @@ export default function EmergencyCard({ profile, onEdit, offCardAllergies = [], 
             Last updated {new Date(profile.lastConfirmedAt).toLocaleDateString()}
           </Text>
         ) : null}
-      </ScrollView>
-    </SafeAreaView>
+      </Sheet>
+    </Screen>
   );
 }

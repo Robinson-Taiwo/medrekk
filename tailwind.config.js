@@ -42,6 +42,14 @@ module.exports = {
         dim: "#CBD5E1",
 
         /*
+         * Evidence-backed. The one standing with no colour of its own: verified was green,
+         * self-reported amber, allergy red, and "backed by a document" borrowed whichever was
+         * nearest, so two different standings read as the same thing. 7.26:1 on canvas.
+         */
+        evidence: "#1F56B8",
+        "evidence-soft": "#E8EEFB",
+
+        /*
          * The night surface, shared with the website. Used where the app wants to feel like a
          * brand moment rather than a form: signing in, the emergency card, the passport.
          *
