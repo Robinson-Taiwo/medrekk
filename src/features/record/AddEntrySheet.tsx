@@ -1,5 +1,16 @@
 import { useState } from 'react';
-import { ActivityIndicator, Image, Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Image,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import Feather from '@expo/vector-icons/Feather';
 
@@ -7,10 +18,21 @@ import { api } from '@/services/api';
 import { Meta } from '@/components/design/primitives';
 import { captureFromCamera, captureFromLibrary, type PhotoText } from '@/features/ai/photo';
 import { useVoiceCapture, voiceAvailable } from '@/features/ai/useVoiceCapture';
+import { structure } from '@/features/ai/structure';
+import { keepImage } from '@/features/record/evidenceImages';
 import { useWhisperStatus } from '@/features/ai/whisperStore';
 import { C } from '@/components/design/tokens';
 
 export type AddCategory = 'ALLERGIES' | 'CURRENT_MEDICATIONS' | 'PAST_MEDICAL_HISTORY';
+
+/** What POST /patients/me/entries returns: the document, with the claims it produced. */
+export interface CreatedEntry {
+  id: string;
+  rawInput: string;
+  createdClaimIds: string[];
+  captureMethod: string;
+  createdAt: string;
+}
 
 export interface AddedClaim {
   id: string;
@@ -37,8 +59,25 @@ const MODES: { key: Mode; label: string; icon: keyof typeof Feather.glyphMap }[]
   { key: 'VOICE', label: 'Speak', icon: 'mic' },
 ];
 
-/** The server caps both at 300. Trimming here keeps a long scan from being refused outright. */
-const MAX = 300;
+/**
+ * What the patient captured, kept whole.
+ *
+ * This was 300, which is the cap on a single claim's VALUE — the name of one allergy. Applying it
+ * to the capture meant a scanned discharge summary was cut off mid-word and filed as the name of
+ * an allergy. The note is a document: the server takes 5000 of it.
+ */
+const MAX = 5000;
+
+/** A claim's value really is capped at 300, and that cap belongs on the extracted item. */
+const MAX_CLAIM_VALUE = 300;
+
+/**
+ * Past this, a capture is treated as a document to read rather than one fact typed in.
+ *
+ * Deliberately generous. "Amoxicillin 500mg three times daily after food" is one medicine, not a
+ * report, and sending it through extraction would risk it coming back as two.
+ */
+const LOOKS_LIKE_A_DOCUMENT = 140;
 
 /**
  * A photograph of a prescription is a prescription; a photograph of anything else is a
@@ -66,7 +105,7 @@ export default function AddEntrySheet({
   onAdded,
 }: {
   onClose: () => void;
-  onAdded: (claim: AddedClaim) => void;
+  onAdded: (entry: CreatedEntry) => void;
 }) {
   const router = useRouter();
   const [category, setCategory] = useState<AddCategory>('ALLERGIES');
@@ -121,37 +160,52 @@ export default function AddEntrySheet({
     await voice.start();
   };
 
+  /**
+   * What to file as the structured items inside this document.
+   *
+   * One short line typed under a chosen heading is exactly what it says it is, so it goes in as
+   * that, with no model involved — somebody who picked "Allergy" and typed "Penicillin" should
+   * not have their word reinterpreted. Anything longer, read off a photograph or dictated, is
+   * read for the facts it contains.
+   *
+   * Extraction finding nothing is not a failure and never blocks the save: the document is the
+   * thing being kept, and the items are an index into it.
+   */
+  const itemsFor = async (note: string): Promise<{ category: string; value: string }[]> => {
+    const oneFact = mode === 'TYPE' && note.length <= LOOKS_LIKE_A_DOCUMENT;
+    if (oneFact) return [{ category, value: note.slice(0, MAX_CLAIM_VALUE) }];
+    try {
+      const result = await structure(note);
+      return result.items.map((i) => ({ category: i.category, value: i.value.slice(0, MAX_CLAIM_VALUE) }));
+    } catch {
+      return [];
+    }
+  };
+
   const submit = async () => {
-    const entry = value.trim();
-    if (busy || entry.length === 0) return;
+    const note = value.trim();
+    if (busy || note.length === 0) return;
     setBusy(true);
     setError(null);
     try {
-      const created = await api<AddedClaim>('/patients/me/claims', {
+      // One call, filing the capture as a document with whatever was found inside it. This used
+      // to POST a single claim, which is why a whole report arrived as the 300-character name of
+      // an allergy: the document had nowhere to live, so the heading became the document.
+      const created = await api<CreatedEntry>('/patients/me/entries', {
         method: 'POST',
-        body: { category, value: entry.slice(0, MAX) },
+        body: {
+          note: note.slice(0, MAX),
+          captureMethod: mode === 'VOICE' ? 'VOICE' : mode === 'PHOTO' ? 'PHOTO' : 'TEXT',
+          textSource: mode === 'VOICE' ? 'DICTATED' : mode === 'PHOTO' ? 'OCR' : 'TYPED',
+          evidenceKind: kindFor(category),
+          items: await itemsFor(note),
+          ...(photo?.imageHash ? { imageHash: photo.imageHash } : {}),
+        },
       });
 
-      // Attached second and deliberately not fatal: the entry is the thing the patient asked
-      // for, and losing the attachment must not lose the entry.
-      if (photo) {
-        try {
-          await api(`/patients/me/claims/${created.id}/evidence`, {
-            method: 'POST',
-            body: {
-              kind: kindFor(category),
-              description:
-                photo.text.trim().length >= 3
-                  ? photo.text.trim().slice(0, MAX)
-                  : `Photograph taken by the patient (${photo.source === 'CAMERA' ? 'camera' : 'from photos'})`,
-              captureMethod: 'OCR',
-              ...(photo.imageHash ? { imageHash: photo.imageHash } : {}),
-            },
-          });
-        } catch {
-          // Shown on the next screen as an entry with no document rather than an error here.
-        }
-      }
+      // After the save, never before: the picture is the patient's copy of a document that is
+      // now on the record, and a failure to copy it must not cost them the entry.
+      if (photo?.imageHash) await keepImage(photo.imageHash, photo.uri);
 
       onAdded(created);
       onClose();
@@ -166,7 +220,15 @@ export default function AddEntrySheet({
 
   return (
     <Modal transparent animationType="slide" onRequestClose={onClose}>
-      <View className="flex-1 justify-end bg-black/40">
+      {/*
+        The field sits at the bottom of a sheet, which is exactly where the keyboard lands. Without
+        this the caret, the Add button and the self-reported note were all underneath it, so you
+        typed blind. 'padding' on iOS shrinks the sheet; Android resizes its own window, so 'height'
+        lets the sheet re-measure into what is left rather than being pushed off the top.
+      */}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        className="flex-1 justify-end bg-black/40">
         <View className="max-h-[88%] gap-3 rounded-t-3xl bg-canvas p-5 pb-9">
           <View className="flex-row items-center justify-between">
             <Text className="text-lg font-semibold text-ink">Add to your record</Text>
@@ -175,7 +237,10 @@ export default function AddEntrySheet({
             </Pressable>
           </View>
 
-          <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+          <ScrollView
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="interactive"
+            showsVerticalScrollIndicator={false}>
             <View className="gap-3">
               <View className="flex-row rounded-xl bg-track p-[3px]">
                 {CATEGORIES.map((c) => (
@@ -302,15 +367,51 @@ export default function AddEntrySheet({
                 </View>
               ) : null}
 
+              {/*
+                Always multiline, and it grows. It used to be a single line for typing, which is
+                the shape of a field that expects one word — so a pasted discharge summary scrolled
+                sideways through a 52px slot with its beginning and end both out of sight.
+              */}
               <TextInput
-                className="min-h-[52px] rounded-xl border border-line bg-surface px-4 py-3.5 text-base text-ink"
-                placeholder={mode === 'TYPE' ? 'e.g. Penicillin' : 'What was read goes here — edit it down'}
+                className="rounded-xl border border-line bg-surface px-4 py-3.5 text-base leading-[22px] text-ink"
+                style={{ minHeight: mode === 'TYPE' ? 52 : 132, maxHeight: 260 }}
+                placeholder={
+                  mode === 'TYPE'
+                    ? 'e.g. Penicillin — or paste a whole report'
+                    : 'What was read goes here. Correct anything the scan got wrong.'
+                }
                 placeholderTextColor={C.hint}
                 value={value}
                 onChangeText={(t) => setValue(t.slice(0, MAX))}
-                multiline={mode !== 'TYPE'}
+                multiline
+                textAlignVertical="top"
+                scrollEnabled
                 autoFocus={mode === 'TYPE'}
               />
+
+              {/*
+                Only once the end is actually in sight. A counter sitting under an empty field is
+                a limit announcing itself before anyone has come near it.
+              */}
+              {value.length > MAX - 500 ? (
+                <Text className="text-right text-[11px] text-muted">
+                  {MAX - value.length} characters left
+                </Text>
+              ) : null}
+
+              {/*
+                Said before the save, not after, because it changes what someone types. A long
+                capture is kept whole and read for what is in it; a short one is taken at its word.
+              */}
+              {value.trim().length > LOOKS_LIKE_A_DOCUMENT || mode !== 'TYPE' ? (
+                <View className="flex-row items-start gap-2 rounded-xl bg-primary-soft px-3 py-2.5">
+                  <Feather name="file-text" size={14} color={C.primary} style={{ marginTop: 1 }} />
+                  <Text className="flex-1 text-[12px] leading-[17px] text-ink">
+                    This is kept as a document you can open and read in full. Allergies and medicines
+                    found in it are listed underneath.
+                  </Text>
+                </View>
+              ) : null}
 
               {error ? <Text className="text-sm text-danger">{error}</Text> : null}
 
@@ -331,7 +432,7 @@ export default function AddEntrySheet({
             </View>
           </ScrollView>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

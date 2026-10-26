@@ -31,7 +31,8 @@ export const TERMS: Term[] = [
   { name: 'Ceftriaxone', kind: 'drug', plain: 'An antibiotic usually given by injection in hospital, used for more serious bacterial infections.' },
   { name: 'Azithromycin', kind: 'drug', aliases: ['zithromax'], plain: 'An antibiotic used for chest, throat and some sexually transmitted infections.' },
   { name: 'Erythromycin', kind: 'drug', plain: 'An antibiotic often used when someone cannot take penicillin.' },
-  { name: 'Ciprofloxacin', kind: 'drug', aliases: ['cipro'], plain: 'An antibiotic used for urinary, gut and some other bacterial infections.' },
+  { name: 'Ciprofloxacin', kind: 'drug', aliases: ['cipro', 'ciprotab', 'ciproxin', 'cifran'], plain: 'An antibiotic used for urinary, gut and some other bacterial infections.' },
+  { name: 'Ampiclox', kind: 'drug', aliases: ['ampicillin and cloxacillin', 'ampi-clox'], plain: 'An antibiotic combining ampicillin and cloxacillin, both in the penicillin family. It is used for bacterial infections including those of the skin and chest.' },
   { name: 'Metronidazole', kind: 'drug', aliases: ['flagyl'], plain: 'A medicine that treats certain bacteria and parasites, often used for gut and dental infections.' },
   { name: 'Cotrimoxazole', kind: 'drug', aliases: ['septrin', 'bactrim', 'trimethoprim-sulfamethoxazole'], plain: 'An antibiotic combination containing a sulfa medicine. It is used for chest and urinary infections, and to prevent infections in people living with HIV.' },
   { name: 'Doxycycline', kind: 'drug', plain: 'An antibiotic used for chest infections, some tropical infections and acne.' },
@@ -252,7 +253,11 @@ export function findTerms(value: string): Term[] {
 
   for (const { key, term } of INDEX) {
     if (found.includes(term)) continue;
-    if (!haystack.includes(` ${key} `) && !haystack.includes(`${key} `) && !haystack.includes(` ${key}`)) continue;
+    // Whole words only. haystack is already padded at both ends, so the padded form alone
+    // matches a term anywhere in the string — the two unpadded variants this used to also
+    // accept matched any word merely STARTING with the key, which is how the alias "co" for
+    // "c/o" fired on the word "complaint" and explained a chief complaint as an abbreviation.
+    if (!haystack.includes(` ${key} `)) continue;
     // Skip a shorter term already covered by a longer one, e.g. "diabetes" inside "type 2 diabetes".
     if (used.some((longer) => longer.includes(key))) continue;
     used.push(key);

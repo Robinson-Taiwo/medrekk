@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { useFocusEffect } from 'expo-router';
-import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Feather from '@expo/vector-icons/Feather';
 
@@ -11,6 +11,7 @@ import { Card, Meta } from '@/components/design/primitives';
 import { BottomTabInset } from '@/constants/theme';
 import { Chrome, Note, Screen, Sheet } from '@/components/design/split';
 import { C } from '@/components/design/tokens';
+import { useFeedback } from '@/components/design/feedback';
 
 interface ModelCardProps {
   label: string;
@@ -23,13 +24,19 @@ interface ModelCardProps {
 }
 
 function ModelCard({ label, approxMb, purpose, withoutIt, status, onDownload, onDelete }: ModelCardProps) {
+  const { confirm } = useFeedback();
   const percent = status.totalBytes > 0 ? Math.min(100, Math.round((status.bytesWritten / status.totalBytes) * 100)) : 0;
 
   const confirmDelete = () =>
-    Alert.alert('Remove this model?', withoutIt, [
-      { text: 'Keep it', style: 'cancel' },
-      { text: 'Remove', style: 'destructive', onPress: onDelete },
-    ]);
+    void confirm({
+      title: 'Remove this model?',
+      body: withoutIt,
+      confirmLabel: 'Remove',
+      cancelLabel: 'Keep it',
+      destructive: true,
+    }).then((ok) => {
+      if (ok) onDelete();
+    });
 
   return (
     <Card className="gap-3 p-4">

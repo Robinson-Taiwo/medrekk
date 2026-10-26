@@ -3,6 +3,7 @@ import { useFocusEffect } from "expo-router";
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
 
 import { api } from "@/services/api";
+import { fetchWithCache } from "@/offline/cachedFetch";
 import { Chrome, Screen, Sheet } from '@/components/design/split';
 import { C } from '@/components/design/tokens';
 import { BottomTabInset } from '@/constants/theme';
@@ -194,9 +195,22 @@ export default function HistoryScreen() {
    * read a page at a time. The server orders it newest first; sorting here as well would be
    * sorting a page rather than the trail, which looks right and is not.
    */
+  /**
+   * Only the first page is cached, and only the unfiltered one. That page is the answer to "has
+   * anybody opened my record", which is worth having on a phone with no signal; the pages behind
+   * it are a trail somebody is deliberately walking back through, and that needs the server.
+   *
+   * Caching per filter combination would fill the table with near-duplicates of the same rows,
+   * so a filtered view offline shows nothing rather than something subtly wrong.
+   */
+  const cacheable = group === 'all' && range === 'all';
+
   const load = useCallback(async () => {
     try {
-      const page = asPage(await api<AuditPage | AuditEntry[]>(query()));
+      const body = cacheable
+        ? (await fetchWithCache<AuditPage | AuditEntry[]>('audit-first-page', query())).data
+        : await api<AuditPage | AuditEntry[]>(query());
+      const page = asPage(body);
       inFlight.current = false;
       setItems(page.items);
       setCursor(page.nextCursor);
@@ -204,7 +218,7 @@ export default function HistoryScreen() {
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong.");
     }
-  }, [query]);
+  }, [query, cacheable]);
 
   const loadMore = useCallback(async () => {
     if (!cursor || inFlight.current) return;

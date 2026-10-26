@@ -1,10 +1,12 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Modal, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Feather from '@expo/vector-icons/Feather';
 
 import { api } from '@/services/api';
+import { localImageFor } from '@/features/record/evidenceImages';
+import { plainReport, type PlainLine } from '@/features/ai/plainLanguage';
 import { Card, Meta } from '@/components/design/primitives';
 import { explainReport, type Section } from '@/features/ai/reportTemplates';
 import { Chrome, Screen, Sheet } from '@/components/design/split';
@@ -13,6 +15,9 @@ import { C } from '@/components/design/tokens';
 interface Visit {
   id: string;
   rawInput: string;
+  /** The fingerprint of the picture this handset may be holding. The image is never uploaded. */
+  imageHash?: string;
+  authoredBy?: 'PATIENT' | 'WORKER';
   recordedByName: string;
   recordedByFacility: string | null;
   recordedAt: string;
@@ -38,6 +43,139 @@ const CATEGORY_HEADING: Record<string, string> = {
  * Pulls the documented plan out of the note. Only phrases that clearly state what should happen
  * next are matched: anything else is left alone rather than guessed at.
  */
+
+/**
+ * The photograph behind this document, if this handset is the one that took it.
+ *
+ * MedRekk holds the fingerprint and never the picture, so a second phone signed into the same
+ * account has the whole record and none of the images. That is the design rather than a fault, and
+ * saying so plainly is better than a blank frame that reads as something having gone missing.
+ */
+function DocumentImage({ hash }: { hash?: string }) {
+  const [uri, setUri] = useState<string | null>(null);
+  const [checked, setChecked] = useState(false);
+  const [full, setFull] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    void localImageFor(hash).then((found) => {
+      if (cancelled) return;
+      setUri(found);
+      setChecked(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [hash]);
+
+  if (!hash || !checked) return null;
+
+  if (!uri) {
+    return (
+      <Card className="flex-row items-center gap-3 p-3.5">
+        <View className="h-9 w-9 items-center justify-center rounded-xl bg-fill">
+          <Feather name="image" size={16} color={C.muted} />
+        </View>
+        <Text className="flex-1 text-[12.5px] leading-[18px] text-muted">
+          A photograph was attached to this document. It is kept on the phone that took it and was
+          never uploaded, so it is not on this device.
+        </Text>
+      </Card>
+    );
+  }
+
+  return (
+    <>
+      <Pressable onPress={() => setFull(true)}>
+        <Card className="gap-2.5 overflow-hidden p-3.5">
+          <View className="flex-row items-center gap-2">
+            <Feather name="paperclip" size={13} color={C.muted} />
+            <Text className="flex-1 text-[12.5px] font-medium text-ink">The document you photographed</Text>
+            <Feather name="maximize-2" size={13} color={C.muted} />
+          </View>
+          <Image
+            source={{ uri }}
+            style={{ width: '100%', height: 190, borderRadius: 12, backgroundColor: C.fill }}
+            resizeMode="cover"
+          />
+          <Meta>Held on this phone only. Tap to see all of it.</Meta>
+        </Card>
+      </Pressable>
+
+      {/* Full-bleed on black, because the point is to read small print on a photographed page. */}
+      <Modal visible={full} transparent animationType="fade" onRequestClose={() => setFull(false)}>
+        <View className="flex-1 bg-black">
+          <SafeAreaView className="flex-1">
+            <View className="flex-row justify-end px-4 py-2">
+              <Pressable
+                onPress={() => setFull(false)}
+                hitSlop={10}
+                accessibilityRole="button"
+                accessibilityLabel="Close the photograph"
+                className="h-10 w-10 items-center justify-center rounded-full bg-white/10">
+                <Feather name="x" size={20} color="#FFFFFF" />
+              </Pressable>
+            </View>
+            <ScrollView
+              maximumZoomScale={4}
+              minimumZoomScale={1}
+              centerContent
+              contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}>
+              <Image source={{ uri }} style={{ width: '100%', height: 520 }} resizeMode="contain" />
+            </ScrollView>
+          </SafeAreaView>
+        </View>
+      </Modal>
+    </>
+  );
+}
+
+const PLAIN_ICON: Record<PlainLine['kind'], keyof typeof Feather.glyphMap> = {
+  medicine: 'package',
+  test: 'activity',
+  condition: 'alert-circle',
+  instruction: 'info',
+};
+
+/**
+ * The note, said the way a person would say it.
+ *
+ * First on the screen and open by default, because it is the reason to open a document at all.
+ * The original is still underneath, unchanged and one tap away — this does not replace the
+ * record, it reads it aloud. Anyone who wants to check a sentence against the words it came
+ * from can, which is also the only way a rewrite like this earns trust.
+ */
+function InPlainWords({ note }: { note: string }) {
+  const lines = useMemo(() => plainReport(note), [note]);
+  if (lines.length === 0) return null;
+
+  return (
+    <View className="gap-2.5">
+      <View className="flex-row items-center gap-2">
+        <Feather name="message-circle" size={14} color={C.primary} />
+        <Text className="text-[13px] font-semibold text-ink">In plain words</Text>
+      </View>
+
+      <Card className="overflow-hidden p-0">
+        {lines.map((line, i) => (
+          <View
+            key={`${line.kind}-${i}`}
+            className={`flex-row gap-3 px-4 py-3.5 ${i > 0 ? 'border-t border-line' : ''}`}>
+            <View className="mt-[1px] h-7 w-7 items-center justify-center rounded-lg bg-primary-soft">
+              <Feather name={PLAIN_ICON[line.kind]} size={13} color={C.primary} />
+            </View>
+            <Text className="flex-1 text-[14px] leading-[21px] text-ink">{line.text}</Text>
+          </View>
+        ))}
+      </Card>
+
+      <Text className="text-[11.5px] leading-[16px] text-muted">
+        MedRekk rewrote this from the note below. It explains what was written down — it does not
+        add to it, and it is not advice. Ask your health worker if anything here is unclear.
+      </Text>
+    </View>
+  );
+}
 
 const formatDate = (iso: string): string =>
   new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
@@ -123,6 +261,8 @@ export default function VisitScreen() {
           </View>
         ) : null}
 
+        <InPlainWords note={visit.rawInput} />
+
         <Pressable onPress={() => setShowNote((v) => !v)} hitSlop={6}>
           <Text className="text-[13px] font-medium text-primary">
             {showNote ? 'Hide the original note' : 'Show the original note'}
@@ -132,9 +272,15 @@ export default function VisitScreen() {
         {showNote ? (
           <Card className="gap-2 p-4">
             <Text className="text-[15px] leading-[23px] text-ink">{visit.rawInput}</Text>
-            <Meta>These are the health worker&apos;s own words, kept exactly as written.</Meta>
+            <Meta>
+              {visit.authoredBy === 'PATIENT'
+                ? 'This is the document exactly as it was captured, with nothing rewritten.'
+                : "These are the health worker's own words, kept exactly as written."}
+            </Meta>
           </Card>
         ) : null}
+
+        <DocumentImage hash={visit.imageHash} />
 
 
         {grouped.map(([category, list]) => (

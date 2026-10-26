@@ -10,6 +10,7 @@ import { useRouter } from 'expo-router'
 
 import AppTabs from '@/components/app-tabs'
 import { AuthProvider, useAuth } from '@/features/auth/AuthProvider'
+import { FeedbackProvider } from '@/components/design/feedback'
 import AuthScreen from '@/features/auth/AuthScreen'
 import { useSyncOnReconnect } from '@/sync/useSyncOnReconnect'
 import { attachNotificationTaps } from '@/features/notifications/push'
@@ -75,9 +76,11 @@ export default function RootLayout() {
   // background behind light screens — the same split that was fixed on the website.
   return (
     <ThemeProvider value={DefaultTheme}>
-      <AuthProvider>
-        <Gate />
-      </AuthProvider>
+      <FeedbackProvider>
+        <AuthProvider>
+          <Gate />
+        </AuthProvider>
+      </FeedbackProvider>
     </ThemeProvider>
   )
 }

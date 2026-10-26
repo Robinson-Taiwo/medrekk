@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { ActivityIndicator, Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Feather from '@expo/vector-icons/Feather';
 
@@ -8,6 +8,7 @@ import { api } from '@/services/api';
 import { Card, Eyebrow, Meta } from '@/components/design/primitives';
 import { Chrome, Screen, Sheet } from '@/components/design/split';
 import { C } from '@/components/design/tokens';
+import { useFeedback, reasonFor } from '@/components/design/feedback';
 
 interface PinStatus {
   set: boolean;
@@ -27,6 +28,8 @@ function isWeakPin(pin: string): boolean {
 const inputClass = 'h-[52px] rounded-xl border border-line bg-surface px-4 text-base text-ink';
 
 export default function UssdSetupScreen() {
+  // Aliased: this screen already has a `confirm` of its own.
+  const { toast, confirm: askToConfirm } = useFeedback();
   const router = useRouter();
   const [status, setStatus] = useState<PinStatus | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -71,7 +74,7 @@ export default function UssdSetupScreen() {
       setEditingPhone(false);
       await load();
     } catch (e) {
-      Alert.alert('Could not save that number', e instanceof Error ? e.message : 'Something went wrong.');
+      toast({ tone: 'error', title: 'Could not save that number', body: reasonFor(e) });
     } finally {
       setPhoneBusy(false);
     }
@@ -97,27 +100,21 @@ export default function UssdSetupScreen() {
   };
 
   const turnOff = () =>
-    Alert.alert(
-      'Turn off dialling?',
-      'Your PIN is deleted. You will not be able to reach your record by phone until you set a new one. Your emergency card can still be looked up with your MedRekk Code, as it always could.',
-      [
-        { text: 'Keep it on', style: 'cancel' },
-        {
-          text: 'Turn off',
-          style: 'destructive',
-          onPress: () => {
-            void (async () => {
-              try {
-                await api('/patients/me/ussd-pin', { method: 'DELETE' });
-                await load();
-              } catch (e) {
-                Alert.alert('Could not turn it off', e instanceof Error ? e.message : 'Something went wrong.');
-              }
-            })();
-          },
-        },
-      ],
-    );
+    void askToConfirm({
+      title: 'Turn off dialling?',
+      body: 'Your PIN is deleted. You will not be able to reach your record by phone until you set a new one. Your emergency card can still be looked up with your MedRekk Code, as it always could.',
+      confirmLabel: 'Turn off',
+      cancelLabel: 'Keep it on',
+      destructive: true,
+    }).then(async (ok) => {
+      if (!ok) return;
+      try {
+        await api('/patients/me/ussd-pin', { method: 'DELETE' });
+        await load();
+      } catch (e) {
+        toast({ tone: 'error', title: 'Could not turn it off', body: reasonFor(e) });
+      }
+    });
 
   if (!status) {
     return (

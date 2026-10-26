@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Feather from '@expo/vector-icons/Feather';
 
@@ -10,6 +10,7 @@ import { Card, Meta } from '@/components/design/primitives';
 import { explainSections, type ExplanationSections } from '@/features/ai/explain';
 import { Chrome, Screen, Sheet } from '@/components/design/split';
 import { C } from '@/components/design/tokens';
+import { useFeedback, reasonFor } from '@/components/design/feedback';
 
 interface Claim {
   id: string;
@@ -57,6 +58,7 @@ const formatDate = (iso: string): string =>
   new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
 
 export default function ClaimDetailScreen() {
+  const { toast, confirm } = useFeedback();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const [claim, setClaim] = useState<Claim | null>(null);
@@ -135,7 +137,7 @@ export default function ClaimDetailScreen() {
       router.navigate('/record');
     } catch (e) {
       setBusy(false);
-      Alert.alert('Could not remove it', e instanceof Error ? e.message : 'Something went wrong.');
+      toast({ tone: 'error', title: 'Could not remove it', body: reasonFor(e) });
     }
   };
 
@@ -148,23 +150,24 @@ export default function ClaimDetailScreen() {
       });
       setClaim(updated);
     } catch (e) {
-      Alert.alert('Could not update the card', e instanceof Error ? e.message : 'Something went wrong.');
+      toast({ tone: 'error', title: 'Could not update the card', body: reasonFor(e) });
     } finally {
       setCardBusy(false);
     }
   };
 
   const confirmRemove = () =>
-    Alert.alert(
-      'Remove this from your record?',
-      selfEntered
+    void confirm({
+      title: 'Remove this from your record?',
+      body: selfEntered
         ? 'You added this yourself, so it will be deleted.'
         : 'It will no longer appear in your record or to anyone you share it with. Your history will show that you removed an item on this date, but not what it was.',
-      [
-        { text: 'Keep it', style: 'cancel' },
-        { text: 'Remove', style: 'destructive', onPress: () => void remove() },
-      ],
-    );
+      confirmLabel: 'Remove',
+      cancelLabel: 'Keep it',
+      destructive: true,
+    }).then((ok) => {
+      if (ok) void remove();
+    });
 
   const style = STATUS_STYLE[claim.status] ?? STATUS_STYLE.UNVERIFIED;
   const captures = origin.filter((o) => o.kind === 'ORIGINAL_CAPTURE');

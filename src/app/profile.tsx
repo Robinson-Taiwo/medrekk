@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { Alert, Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
 
 import { useAuth } from '@/features/auth/AuthProvider';
@@ -10,6 +10,7 @@ import { addOwnRecord } from '@/features/auth/authApi';
 import { Meta } from '@/components/design/primitives';
 import { C } from '@/components/design/tokens';
 import { Chrome, Screen, Sheet } from '@/components/design/split';
+import { useFeedback, reasonFor } from '@/components/design/feedback';
 
 interface Me {
   fullName: string;
@@ -45,6 +46,7 @@ function Row({
 }
 
 export default function ProfileScreen() {
+  const { toast, confirm } = useFeedback();
   const { user, signOut, adoptSession } = useAuth();
   const router = useRouter();
   const [me, setMe] = useState<Me | null>(null);
@@ -75,17 +77,26 @@ export default function ProfileScreen() {
       await adoptSession(await addOwnRecord(token));
       router.push('/record');
     } catch (e) {
-      Alert.alert('Could not set that up', e instanceof Error ? e.message : 'Try again when you have a connection.');
+      toast({
+        tone: 'error',
+        title: 'Could not set that up',
+        body: reasonFor(e, 'Try again when you have a connection.'),
+      });
     } finally {
       setOwnRecordBusy(false);
     }
   };
 
   const confirmSignOut = () =>
-    Alert.alert('Sign out?', 'You will need your email and password to get back in.', [
-      { text: 'Stay signed in', style: 'cancel' },
-      { text: 'Sign out', style: 'destructive', onPress: () => void signOut() },
-    ]);
+    void confirm({
+      title: 'Sign out?',
+      body: 'You will need your email and password to get back in.',
+      confirmLabel: 'Sign out',
+      cancelLabel: 'Stay signed in',
+      destructive: true,
+    }).then((ok) => {
+      if (ok) void signOut();
+    });
 
   return (
     <Screen>

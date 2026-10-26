@@ -11,6 +11,8 @@ import { ApiError, fetchMe, login, register, type AuthResponse, type PublicUser,
 import { forgetUnlock, rememberUnlock, verifyUnlock } from './offlineUnlock'
 import { attachWorkerAccount, forgetWorkerSessionOnThisDevice } from '@/features/worker/workerSession'
 import { registerForPush, unregisterForPush } from '@/features/notifications/push'
+import { clearCache } from '@/offline/cache'
+import { forgetImages } from '@/features/record/evidenceImages'
 
 type Status = 'loading' | 'signedOut' | 'signedIn'
 
@@ -58,7 +60,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     forgetWorkerSessionOnThisDevice()
 
     // Signing out is deliberate, so everything this phone remembered goes: the token, the
-    // cached record and the stored verifier. Signing back in will need a connection again.
+    // cached record, the kept documents and the stored verifier. Signing back in will need a
+    // connection again.
+    //
+    // The first two lines are new. This comment already claimed the cached record was cleared
+    // and nothing cleared it, so signing out of a shared handset left the previous person's
+    // record readable in SQLite — and, once photographs were kept, their documents on disk.
+    await clearCache()
+    await forgetImages()
     await forgetUnlock()
     await clearToken()
     setUser(null)

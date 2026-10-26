@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { Alert, Pressable, RefreshControl, Text, View } from 'react-native';
+import { Pressable, RefreshControl, Text, View } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
 
 import { useAuth } from '@/features/auth/AuthProvider';
@@ -13,6 +13,7 @@ import { Card, Meta } from '@/components/design/primitives';
 import { C } from '@/components/design/tokens';
 import { Callout, Chrome, ChromeTag, Empty, Heading, Note, Screen, Sheet } from '@/components/design/split';
 import { CATEGORY_ICON, countByCategory, nounFor } from '@/features/record/categories';
+import { useFeedback, reasonFor } from '@/components/design/feedback';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? '';
 
@@ -103,6 +104,7 @@ function SetupStep({
 }
 
 export default function Index() {
+  const { toast } = useFeedback();
   const { user } = useAuth();
   const router = useRouter();
   const { requests, active } = useAccessRequests();
@@ -129,13 +131,25 @@ export default function Index() {
     }
   }, []);
 
-  // Allergies a worker recorded that the patient has not decided about. Not cached with the rest:
-  // an undecided allergy is a prompt, not part of the record view.
+  /**
+   * The record, for the counts, and the undecided allergies, for the prompt. Two different
+   * appetites for staleness out of one request.
+   *
+   * The counts are cached, because "3 medicines" is true whether or not there is signal, and the
+   * previous behaviour — an empty list, so "Your record is empty" — told people on a bad
+   * connection that they owned nothing.
+   *
+   * The prompt is not shown from cache. Deciding writes to the server, so an offer to add an
+   * allergy to the emergency card that cannot be accepted is worse than no offer: it is a button
+   * that fails. It comes back on the next successful load.
+   */
   const loadAllergies = useCallback(async () => {
     try {
-      const all = await api<AllergyClaim[]>('/patients/me/claims');
-      setClaims(all);
-      setAllergies(all.filter((c) => c.category === 'ALLERGIES' && !c.emergencyDecision));
+      const result = await fetchWithCache<AllergyClaim[]>('claims', '/patients/me/claims');
+      setClaims(result.data);
+      setAllergies(
+        result.fromCache ? [] : result.data.filter((c) => c.category === 'ALLERGIES' && !c.emergencyDecision),
+      );
     } catch {
       setClaims([]);
       setAllergies([]);
@@ -161,7 +175,7 @@ export default function Index() {
         setAllergies((prev) => prev.filter((c) => c.id !== claimId));
         if (add) await load();
       } catch (e) {
-        Alert.alert('Could not update your card', e instanceof Error ? e.message : 'Something went wrong.');
+        toast({ tone: 'error', title: 'Could not update your card', body: reasonFor(e) });
       } finally {
         setDeciding(false);
       }

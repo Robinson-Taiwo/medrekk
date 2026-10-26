@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { ActivityIndicator, Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Feather from '@expo/vector-icons/Feather';
 
@@ -24,6 +24,7 @@ import { Card, Meta } from '@/components/design/primitives';
 import { C } from '@/components/design/tokens';
 import { BottomTabInset } from '@/constants/theme';
 import { Chrome, ChromeTag, Empty, Heading, Note, Screen, Sheet } from '@/components/design/split';
+import { useFeedback } from '@/components/design/feedback';
 
 type Stage = 'CAPTURE' | 'PROCESSING' | 'REVIEW' | 'SAVED';
 
@@ -51,6 +52,7 @@ const GROUP_HEADING: Record<string, string> = {
 };
 
 export default function WorkerEncounterScreen() {
+  const { confirm } = useFeedback();
   const session = useWorkerSession();
   const { user } = useAuth();
   // Whether the record has it yet, as opposed to whether this handset has it.
@@ -207,10 +209,15 @@ export default function WorkerEncounterScreen() {
   };
 
   const discard = () =>
-    Alert.alert('Discard this encounter?', 'Nothing will be added to the record.', [
-      { text: 'Keep editing', style: 'cancel' },
-      { text: 'Discard', style: 'destructive', onPress: () => void runDiscard() },
-    ]);
+    void confirm({
+      title: 'Discard this encounter?',
+      body: 'Nothing will be added to the record.',
+      confirmLabel: 'Discard',
+      cancelLabel: 'Keep editing',
+      destructive: true,
+    }).then((ok) => {
+      if (ok) void runDiscard();
+    });
 
   return (
     <Screen>

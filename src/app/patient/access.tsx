@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
-import { Alert, FlatList, Pressable, ScrollView, Text, View } from 'react-native';
+import { FlatList, Pressable, ScrollView, Text, View } from 'react-native';
 
 import type { ActiveAccessSession, PendingAccessRequest } from '@/features/access/accessApi';
 import Feather from '@expo/vector-icons/Feather';
@@ -12,6 +12,7 @@ import AccessEmpty from '@/features/access/AccessEmpty';
 import { explainAccessRequest, plainAccessRequest } from '@/features/ai/explain';
 import { Card, Chip, Eyebrow, Meta, PrimaryButton, SecondaryButton } from '@/components/design/primitives';
 import type { AccessScope } from '@/types/api';
+import { useFeedback } from '@/components/design/feedback';
 
 const LABELS: Record<string, string> = {
   ALLERGIES: 'Allergies',
@@ -193,22 +194,24 @@ function RequestCard({
 }
 
 function ActiveCard({ item, onEnd }: { item: ActiveAccessSession; onEnd: (id: string) => Promise<void> }) {
+  // Aliased: this screen already has a `confirm` of its own.
+  const { confirm: askToConfirm } = useFeedback();
   const [busy, setBusy] = useState(false);
   const scopes = item.approvedScopes ?? item.requestedScopes;
   const name = item.requester?.name ?? 'This provider';
 
   const confirm = () =>
-    Alert.alert('End access?', `${name} will lose access to your record immediately.`, [
-      { text: 'Keep access', style: 'cancel' },
-      {
-        text: 'End access',
-        style: 'destructive',
-        onPress: () => {
-          setBusy(true);
-          void onEnd(item.id).catch(() => setBusy(false));
-        },
-      },
-    ]);
+    void askToConfirm({
+      title: 'End access?',
+      body: `${name} will lose access to your record immediately.`,
+      confirmLabel: 'End access',
+      cancelLabel: 'Keep access',
+      destructive: true,
+    }).then((ok) => {
+      if (!ok) return;
+      setBusy(true);
+      void onEnd(item.id).catch(() => setBusy(false));
+    });
 
   return (
     <Card className="gap-3 p-3.5">
