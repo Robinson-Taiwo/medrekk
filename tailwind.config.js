@@ -40,6 +40,22 @@ module.exports = {
         "danger-soft": "#FBEAEA",
         "neutral-soft": "#EEF1F4",
         dim: "#CBD5E1",
+
+        /*
+         * The night surface, shared with the website. Used where the app wants to feel like a
+         * brand moment rather than a form: signing in, the emergency card, the passport.
+         *
+         * The brand green does not survive on it — #0F6E56 measures 2.88:1 against #0B1A17 —
+         * so `glow` is a lifted version at 7.56:1. White on `glow` is only 2.36:1 while ink on
+         * it is 7.56:1, which is why a button on this surface carries dark type.
+         */
+        night: "#0B1A17",
+        "night-panel": "#122621",
+        mist: "#F2F7F4",
+        "mist-dim": "#9FB3AB",
+        "mist-faint": "#7C9289",
+        glow: "#2FBE8F",
+        "glow-ink": "#06120F",
       },
       fontFamily: {
         heading: ["Manrope-SemiBold"],

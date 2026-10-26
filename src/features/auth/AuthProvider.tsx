@@ -9,6 +9,7 @@ import {
 } from '@/services/session'
 import { ApiError, fetchMe, login, register, type PublicUser, type Role } from './authApi'
 import { forgetUnlock, rememberUnlock, verifyUnlock } from './offlineUnlock'
+import { attachWorkerAccount, forgetWorkerSessionOnThisDevice } from '@/features/worker/workerSession'
 
 type Status = 'loading' | 'signedOut' | 'signedIn'
 
@@ -40,6 +41,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<PublicUser | null>(null)
 
   const signOut = useCallback(async () => {
+    // The grant is NOT handed back here. Signing out used to release it, which ended an
+    // access the patient had granted for hours because the worker closed the app — and when
+    // that call failed, which offline it usually did, the patient was left looking at an
+    // access whose only token had just been deleted. The grant now outlives the session and
+    // is picked up again from the account on next sign-in; ending it early is a deliberate
+    // act, by the worker on the patient screen or by the patient revoking.
+    forgetWorkerSessionOnThisDevice()
+
     // Signing out is deliberate, so everything this phone remembered goes: the token, the
     // cached record and the stored verifier. Signing back in will need a connection again.
     await forgetUnlock()
@@ -105,6 +114,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     })
     return () => setUnauthorizedHandler(null)
   }, [signOut])
+
+  // Ties the worker-session store to whoever is signed in, so a grant is cached under that
+  // account and the next person on this handset starts with none of it.
+  useEffect(() => {
+    if (user?.role === 'HEALTH_WORKER') attachWorkerAccount(user.id)
+  }, [user])
 
   const signIn = useCallback(async (email: string, password: string) => {
     const address = email.trim().toLowerCase()

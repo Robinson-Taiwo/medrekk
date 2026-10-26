@@ -5,7 +5,7 @@ import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/features/auth/AuthProvider';
-import { accessStatus, lookupPatient, requestAccess } from '@/features/worker/workerApi';
+import { accessStatus, lookupPatient, releaseAccess, requestAccess } from '@/features/worker/workerApi';
 import {
   patchWorkerSession, restoreWorkerSession, setWorkerSession, useWorkerSession,
 } from '@/features/worker/workerSession';
@@ -22,12 +22,41 @@ export default function WorkerPatientScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // An approved session outlives the app being reloaded or reclaimed by Android.
+  // An approved grant outlives the app being reloaded, reclaimed by Android, or signed out of.
   useFocusEffect(
     useCallback(() => {
-      if (!session) void restoreWorkerSession();
-    }, [session]),
+      if (!session) void restoreWorkerSession(user?.id);
+    }, [session, user?.id]),
   );
+
+  /**
+   * Finishing with a patient. The server is told first, and the handset only lets go once it
+   * agrees.
+   *
+   * The order matters now that a grant can be picked up again from the account: clearing this
+   * phone before the server knew would mean an "end access" that failed offline came back by
+   * itself at the next sign-in. Ending access has to be a decision that sticks, so a failure
+   * here is shown rather than swallowed.
+   */
+  const endAccess = async () => {
+    const token = session?.token;
+    if (!token) {
+      setWorkerSession(null);
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      await releaseAccess(token);
+      setWorkerSession(null);
+    } catch {
+      setError(
+        "Couldn't end the access from here — you appear to be offline. It stays active until you have a connection, or until the patient ends it.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
 
   // While the patient decides, poll so the screen moves on by itself.
   useFocusEffect(
@@ -74,17 +103,17 @@ export default function WorkerPatientScreen() {
 
   if (session) {
     return (
-      <SafeAreaView className="flex-1 bg-white dark:bg-black">
+      <SafeAreaView className="flex-1 bg-canvas">
         <View className="flex-1 gap-4 p-6">
-          <Text className="text-3xl font-bold text-gray-900 dark:text-white">{session.patientName}</Text>
-          <Text className="text-sm text-gray-500 dark:text-gray-400">{session.medrekkCode}</Text>
+          <Text className="text-3xl font-bold text-ink">{session.patientName}</Text>
+          <Text className="text-sm text-muted">{session.medrekkCode}</Text>
 
           {session.status === 'PENDING' ? (
-            <View className="gap-3 rounded-2xl bg-amber-50 p-4 dark:bg-amber-950">
-              <Text className="text-base font-semibold text-amber-900 dark:text-amber-100">
+            <View className="gap-3 rounded-2xl bg-amber-50 p-4">
+              <Text className="text-base font-semibold text-amber-900">
                 Waiting for the patient to approve
               </Text>
-              <Text className="text-sm text-amber-900 dark:text-amber-200">
+              <Text className="text-sm text-amber-900">
                 Ask them to open MedRekk and check their Access tab.
               </Text>
               <ActivityIndicator />
@@ -93,7 +122,7 @@ export default function WorkerPatientScreen() {
 
           {session.status === 'APPROVED' ? (
             <View className="gap-3">
-              <Text className="rounded-2xl bg-emerald-50 p-4 text-base text-emerald-900 dark:bg-emerald-950 dark:text-emerald-100">
+              <Text className="rounded-2xl bg-emerald-50 p-4 text-base text-emerald-900">
                 Approved{session.grantedUntil ? ` until ${new Date(session.grantedUntil).toLocaleTimeString()}` : ''}.
               </Text>
               <Pressable
@@ -105,13 +134,17 @@ export default function WorkerPatientScreen() {
           ) : null}
 
           {session.status === 'DENIED' || session.status === 'EXPIRED' ? (
-            <Text className="rounded-2xl bg-red-50 p-4 text-base text-red-900 dark:bg-red-950 dark:text-red-100">
+            <Text className="rounded-2xl bg-red-50 p-4 text-base text-red-900">
               {session.status === 'DENIED' ? 'The patient declined.' : 'This request expired.'}
             </Text>
           ) : null}
 
-          <Pressable onPress={() => setWorkerSession(null)} className="items-center py-3">
-            <Text className="text-sm text-[#0F6E56]">Find another patient</Text>
+          {error ? <Text className="text-sm text-danger">{error}</Text> : null}
+
+          <Pressable disabled={busy} onPress={() => void endAccess()} className="items-center py-3">
+            <Text className={`text-sm text-[#0F6E56] ${busy ? 'opacity-50' : ''}`}>
+              {session.status === 'APPROVED' ? 'End access and find another patient' : 'Find another patient'}
+            </Text>
           </Pressable>
         </View>
       </SafeAreaView>
@@ -119,10 +152,10 @@ export default function WorkerPatientScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white dark:bg-black">
+    <SafeAreaView className="flex-1 bg-canvas">
       <ScrollView contentContainerStyle={{ padding: 24, gap: 16 }}>
-        <Text className="text-3xl font-bold text-gray-900 dark:text-white">Find a patient</Text>
-        <Text className="text-sm text-gray-500 dark:text-gray-400">
+        <Text className="text-3xl font-bold text-ink">Find a patient</Text>
+        <Text className="text-sm text-muted">
           Ask the patient for their MedRekk Code and full name. They approve on their own phone.
         </Text>
 
@@ -131,19 +164,19 @@ export default function WorkerPatientScreen() {
           onChangeText={setCode}
           autoCapitalize="characters"
           placeholder="MRK-82941"
-          className="rounded-xl border border-gray-300 px-4 py-3 text-base text-gray-900 dark:border-gray-700 dark:text-white"
+          className="rounded-xl border border-line bg-surface px-4 py-3 text-base text-ink"
         />
         <TextInput
           value={name}
           onChangeText={setName}
           placeholder="Patient's full name"
-          className="rounded-xl border border-gray-300 px-4 py-3 text-base text-gray-900 dark:border-gray-700 dark:text-white"
+          className="rounded-xl border border-line bg-surface px-4 py-3 text-base text-ink"
         />
         <TextInput
           value={reason}
           onChangeText={setReason}
           placeholder="Reason"
-          className="rounded-xl border border-gray-300 px-4 py-3 text-base text-gray-900 dark:border-gray-700 dark:text-white"
+          className="rounded-xl border border-line bg-surface px-4 py-3 text-base text-ink"
         />
 
         {error ? <Text className="text-sm text-red-700">{error}</Text> : null}

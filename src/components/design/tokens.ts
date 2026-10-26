@@ -28,6 +28,15 @@ export const C = {
   neutralSoft: '#EEF1F4',
   /** Borders and switch tracks only — never behind text. White on dim is 1.48:1. */
   dim: '#CBD5E1',
+
+  /* The night surface. See tailwind.config.js for why the accent is lifted here. */
+  night: '#0B1A17',
+  nightPanel: '#122621',
+  mist: '#F2F7F4',
+  mistDim: '#9FB3AB',
+  mistFaint: '#7C9289',
+  glow: '#2FBE8F',
+  glowInk: '#06120F',
 } as const;
 
 export type ColorToken = keyof typeof C;

@@ -7,7 +7,15 @@ export interface StructureResult {
   items: DraftItem[];
   source: DraftSource;
   millis: number;
+  /** Shown to the person using the app. Plain, and never an exception message. */
   note: string | null;
+  /**
+   * The technical reason, for the Model screen and for logs — deliberately not shown in the
+   * capture flow. A worker mid-visit cannot act on "Failed to load model", and putting it in
+   * front of them reads as the record itself having gone wrong when nothing has: the note was
+   * still structured, just without the model.
+   */
+  diagnostic: string | null;
 }
 
 /**
@@ -62,7 +70,8 @@ export async function structure(rawInput: string): Promise<StructureResult> {
       items,
       source: 'STUB',
       millis: Date.now() - started,
-      note: 'No on-device model installed. Open the Model tab to add it.',
+      note: items.length === 0 ? 'Nothing to record was found in this note.' : null,
+      diagnostic: 'The on-device model is not installed.',
     };
   }
 
@@ -74,14 +83,19 @@ export async function structure(rawInput: string): Promise<StructureResult> {
       source: 'MODEL',
       millis: Date.now() - started,
       note: items.length === 0 ? 'Nothing to record was found in this note.' : null,
+      diagnostic: null,
     };
   } catch (e) {
+    // The model is a bonus path, not the product. When it will not run, the note is still
+    // read on this phone and every item still goes to a human for review, so this is a
+    // quieter result rather than a failure.
     const fallback = (await stubStructure(rawInput)).filter(keepAsClaim);
     return {
       items: fallback,
       source: 'STUB',
       millis: Date.now() - started,
-      note: e instanceof Error ? `Model failed: ${e.message}` : 'The on-device model failed.',
+      note: fallback.length === 0 ? 'Nothing to record was found in this note.' : null,
+      diagnostic: e instanceof Error ? `The on-device model did not load: ${e.message}` : 'The on-device model did not load.',
     };
   }
 }

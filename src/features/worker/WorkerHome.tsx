@@ -1,10 +1,11 @@
-import { useRouter } from 'expo-router';
+import { useCallback } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Feather from '@expo/vector-icons/Feather';
 
 import { useAuth } from '@/features/auth/AuthProvider';
-import { useWorkerSession } from '@/features/worker/workerSession';
+import { restoreWorkerSession, useWorkerSession } from '@/features/worker/workerSession';
 import { useModelStatus } from '@/features/ai/modelStore';
 import { Card, Meta } from '@/components/design/primitives';
 import { BottomTabInset } from '@/constants/theme';
@@ -14,6 +15,17 @@ export default function WorkerHome() {
   const router = useRouter();
   const session = useWorkerSession();
   const model = useModelStatus();
+
+  // A grant this worker still holds is brought back here, from this handset or from the
+  // account on the server. This screen is where a worker
+  // lands after opening the app, and it was the one place that never looked — so an approved
+  // session sat unread in storage while the screen said there was none, and the worker went
+  // and asked the patient for access they already had.
+  useFocusEffect(
+    useCallback(() => {
+      if (!session) void restoreWorkerSession(user?.id);
+    }, [session, user?.id]),
+  );
 
   const approved = session?.status === 'APPROVED';
 

@@ -46,6 +46,32 @@ export const requestAccess = (
   body: { requesterName: string; requesterRole: string; reason: string; scopes: string[]; durationMinutes: number },
 ) => api<{ status: string }>(`/access/${token}/request`, { method: 'POST', body });
 
+/** Hands the grant back, so the patient stops being shown access nobody is using. */
+export const releaseAccess = (token: string) =>
+  api<{ status: string }>(`/access/${token}/release`, { method: 'POST' });
+
+export interface HeldAccess {
+  id: string;
+  status: 'PENDING' | 'APPROVED';
+  patientName: string;
+  medrekkCode: string;
+  approvedScopes: string[];
+  grantedUntil?: string;
+}
+
+/**
+ * Grants this worker account is still holding, wherever they were approved. Keyed on the
+ * account, so signing out, reinstalling or changing phone no longer loses them.
+ */
+export const myAccessSessions = () => api<HeldAccess[]>('/access/mine');
+
+/** Picks a held grant back up on this device, as a fresh token. */
+export const resumeAccess = (id: string) =>
+  api<{ session: string; status: string; patientName: string; medrekkCode: string; grantedUntil?: string }>(
+    `/access/mine/${id}/resume`,
+    { method: 'POST' },
+  );
+
 export const accessStatus = (token: string) =>
   api<{ status: string; grantedUntil?: string }>(`/access/${token}/status`);
 

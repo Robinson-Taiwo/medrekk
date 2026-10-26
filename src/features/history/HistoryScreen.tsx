@@ -17,7 +17,7 @@ interface AuditEntry {
 }
 
 const LABEL: Record<string, { title: string; dot: string }> = {
-  ACCESS_SESSION_STARTED: { title: "Someone looked you up", dot: "bg-gray-400" },
+  ACCESS_SESSION_STARTED: { title: "Someone looked you up", dot: "bg-dim" },
   ACCESS_REQUESTED: { title: "Access requested", dot: "bg-amber-500" },
   ACCESS_APPROVED: { title: "You approved access", dot: "bg-emerald-500" },
   ACCESS_DENIED: { title: "You denied access", dot: "bg-red-500" },
@@ -28,12 +28,13 @@ const LABEL: Record<string, { title: string; dot: string }> = {
   EMERGENCY_ACCESSED: { title: "Emergency profile opened", dot: "bg-red-600" },
   REFERRAL_CREATED: { title: "You created a referral", dot: "bg-indigo-500" },
   REFERRAL_VIEWED: { title: "A referral was opened", dot: "bg-sky-500" },
-  REFERRAL_REVOKED: { title: "You cancelled a referral", dot: "bg-gray-500" },
-  ACCESS_REVOKED: { title: "You ended someone's access", dot: "bg-gray-500" },
-  CLAIM_REMOVED: { title: "You removed an item from your record", dot: "bg-gray-500" },
+  REFERRAL_REVOKED: { title: "You cancelled a referral", dot: "bg-dim" },
+  ACCESS_REVOKED: { title: "You ended someone's access", dot: "bg-dim" },
+  ACCESS_RELEASED: { title: "A health worker gave access back", dot: "bg-dim" },
+  CLAIM_REMOVED: { title: "You removed an item from your record", dot: "bg-dim" },
   ENCOUNTER_RECORDED: { title: "A health worker started a note", dot: "bg-amber-500" },
   ENCOUNTER_REVIEWED: { title: "A health worker added items to your record", dot: "bg-indigo-500" },
-  ENCOUNTER_DISCARDED: { title: "A health worker discarded a note", dot: "bg-gray-400" },
+  ENCOUNTER_DISCARDED: { title: "A health worker discarded a note", dot: "bg-dim" },
 };
 
 const pretty = (s: string): string => {
@@ -42,20 +43,20 @@ const pretty = (s: string): string => {
 };
 
 function Entry({ item }: { item: AuditEntry }) {
-  const meta = LABEL[item.type] ?? { title: pretty(item.type), dot: "bg-gray-400" };
+  const meta = LABEL[item.type] ?? { title: pretty(item.type), dot: "bg-dim" };
   const viewed = item.informationViewed && item.informationViewed.length > 0 ? item.informationViewed.map(pretty).join(", ") : null;
   return (
-    <View className="gap-1 rounded-2xl border border-gray-200 p-4 dark:border-gray-800">
+    <View className="gap-1 rounded-2xl border border-line bg-surface p-4">
       <View className="flex-row items-center gap-2">
         <View className={`h-2.5 w-2.5 rounded-full ${meta.dot}`} />
-        <Text className="flex-1 text-base font-semibold text-gray-900 dark:text-white">{meta.title}</Text>
+        <Text className="flex-1 text-base font-semibold text-ink">{meta.title}</Text>
       </View>
-      <Text className="text-xs text-gray-500 dark:text-gray-400">{new Date(item.occurredAt).toLocaleString()}</Text>
+      <Text className="text-xs text-muted">{new Date(item.occurredAt).toLocaleString()}</Text>
       {item.requesterIdentifier ? (
-        <Text className="text-sm text-gray-700 dark:text-gray-300">By: {item.requesterIdentifier}</Text>
+        <Text className="text-sm text-ink">By: {item.requesterIdentifier}</Text>
       ) : null}
-      {viewed ? <Text className="text-sm text-gray-700 dark:text-gray-300">Information: {viewed}</Text> : null}
-      {item.reason ? <Text className="text-sm text-gray-700 dark:text-gray-300">Reason: {item.reason}</Text> : null}
+      {viewed ? <Text className="text-sm text-ink">Information: {viewed}</Text> : null}
+      {item.reason ? <Text className="text-sm text-ink">Reason: {item.reason}</Text> : null}
     </View>
   );
 }
@@ -89,7 +90,7 @@ export default function HistoryScreen() {
 
   if (!items) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center gap-3 bg-white p-6 dark:bg-black">
+      <SafeAreaView className="flex-1 items-center justify-center gap-3 bg-canvas p-6">
         {error ? (
           <View className="items-center gap-3">
             <Text className="text-center text-sm text-red-700">{error}</Text>
@@ -105,7 +106,7 @@ export default function HistoryScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white dark:bg-black">
+    <SafeAreaView className="flex-1 bg-canvas">
       <FlatList
         data={items}
         keyExtractor={(i) => i.id}
@@ -113,14 +114,14 @@ export default function HistoryScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void onRefresh()} />}
         ListHeaderComponent={
           <View className="mb-2 gap-1">
-            <Text className="text-3xl font-bold text-gray-900 dark:text-white">Access history</Text>
-            <Text className="text-sm text-gray-500 dark:text-gray-400">
+            <Text className="text-3xl font-bold text-ink">Access history</Text>
+            <Text className="text-sm text-muted">
               Everyone who looked at or changed your record, newest first. Pull down to refresh.
             </Text>
             {error ? <Text className="text-sm text-red-700">{error}</Text> : null}
           </View>
         }
-        ListEmptyComponent={<Text className="text-sm text-gray-500 dark:text-gray-400">Nothing has happened yet.</Text>}
+        ListEmptyComponent={<Text className="text-sm text-muted">Nothing has happened yet.</Text>}
         renderItem={({ item }) => <Entry item={item} />}
       />
     </SafeAreaView>

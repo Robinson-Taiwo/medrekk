@@ -127,10 +127,12 @@ export default function WorkerEncounterScreen() {
       // happen on the handset, and the visit is not sent anywhere until the worker saves it.
       await refreshModelStatus();
       const result = await structure(raw.trim());
-      const engine = `${result.source === 'MODEL' ? 'On-device model' : 'Rule-based'} · ${(
+      const engine = `${result.source === 'MODEL' ? 'On-device model' : 'Read on this phone'} · ${(
         result.millis / 1000
       ).toFixed(1)}s`;
       setAiNote(result.note ? `${engine} — ${result.note}` : engine);
+      // Kept for diagnosis without putting an exception in front of a worker mid-visit.
+      if (result.diagnostic) console.warn(`[medrekk] ${result.diagnostic}`);
       setItems(result.items.map((item) => ({ ...item, confirmed: false })));
       setFromAi(true);
       setStage('REVIEW');
@@ -429,6 +431,20 @@ export default function WorkerEncounterScreen() {
             {aiNote ? <Meta>{aiNote}</Meta> : null}
             {showRaw ? <Text className="rounded-xl bg-fill p-3.5 text-sm leading-5 text-muted">{raw}</Text> : null}
 
+            {/* An empty bordered box used to be drawn here when nothing was found, which read
+                as the screen having broken rather than as a real and ordinary answer. */}
+            {items.length === 0 ? (
+              <View className="items-center gap-2 rounded-xl border border-line bg-surface px-5 py-7">
+                <View className="h-12 w-12 items-center justify-center rounded-2xl bg-fill">
+                  <Feather name="search" size={20} color="#5D6C82" />
+                </View>
+                <Text className="text-[15px] font-semibold text-ink">Nothing was found to record</Text>
+                <Text className="max-w-[280px] text-center text-sm leading-5 text-muted">
+                  Not every note contains something for the record. Add an item yourself below, or go back and
+                  capture more.
+                </Text>
+              </View>
+            ) : (
             <View className="gap-4 rounded-xl border border-line bg-surface p-3.5">
               {GROUP_ORDER.filter((category) => items.some((i) => i.category === category)).map((category) => (
                 <View key={category} className="gap-2">
@@ -450,6 +466,7 @@ export default function WorkerEncounterScreen() {
                 </View>
               ))}
             </View>
+            )}
 
             <Pressable
               onPress={() =>

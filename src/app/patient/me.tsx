@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { ActivityIndicator, Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Feather from '@expo/vector-icons/Feather';
 
@@ -9,15 +9,8 @@ import { api } from '@/services/api';
 import ReferralsFlow from '@/features/referrals/ReferralsFlow';
 import { Card, Meta } from '@/components/design/primitives';
 import { CATEGORY_ICON, summarise } from '@/features/record/categories';
+import AddEntrySheet from '@/features/record/AddEntrySheet';
 import { BottomTabInset } from '@/constants/theme';
-
-type Category = 'ALLERGIES' | 'CURRENT_MEDICATIONS' | 'PAST_MEDICAL_HISTORY';
-
-const ADD_CATEGORIES: { key: Category; label: string }[] = [
-  { key: 'ALLERGIES', label: 'Allergy' },
-  { key: 'CURRENT_MEDICATIONS', label: 'Medicine' },
-  { key: 'PAST_MEDICAL_HISTORY', label: 'History' },
-];
 
 interface Claim {
   id: string;
@@ -140,86 +133,6 @@ function TimelineEntry({ claim, last, onPress }: { claim: Claim; last: boolean; 
   );
 }
 
-function AddSheet({ onClose, onAdded }: { onClose: () => void; onAdded: (claim: Claim) => void }) {
-  const [category, setCategory] = useState<Category>('ALLERGIES');
-  const [value, setValue] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const add = async () => {
-    if (busy || value.trim().length === 0) return;
-    setBusy(true);
-    try {
-      const created = await api<Claim>('/patients/me/claims', {
-        method: 'POST',
-        body: { category, value: value.trim() },
-      });
-      onAdded(created);
-      onClose();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Something went wrong.');
-      setBusy(false);
-    }
-  };
-
-  return (
-    <Modal transparent animationType="slide" onRequestClose={onClose}>
-      <View className="flex-1 justify-end bg-black/40">
-        <View className="gap-3 rounded-t-3xl bg-canvas p-5 pb-9">
-          <View className="flex-row items-center justify-between">
-            <Text className="text-lg font-semibold text-ink">Add to your record</Text>
-            <Pressable onPress={onClose} hitSlop={8}>
-              <Feather name="x" size={20} color="#5D6C82" />
-            </Pressable>
-          </View>
-
-          <View className="flex-row rounded-xl bg-track p-[3px]">
-            {ADD_CATEGORIES.map((c) => (
-              <Pressable
-                key={c.key}
-                onPress={() => setCategory(c.key)}
-                className={`h-9 flex-1 items-center justify-center rounded-[10px] ${
-                  category === c.key ? 'border border-line bg-surface' : ''
-                }`}>
-                <Text className={`text-[13px] ${category === c.key ? 'font-medium text-ink' : 'text-muted'}`}>
-                  {c.label}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-
-          <TextInput
-            className="rounded-xl border border-line bg-surface px-4 py-3.5 text-base text-ink"
-            placeholder="e.g. Penicillin"
-            placeholderTextColor="#7C8A9C"
-            value={value}
-            onChangeText={setValue}
-            autoFocus
-            onSubmitEditing={() => void add()}
-          />
-
-          {error ? <Text className="text-sm text-danger">{error}</Text> : null}
-
-          <Pressable
-            onPress={() => void add()}
-            disabled={busy || value.trim().length === 0}
-            className={`h-[52px] items-center justify-center rounded-xl ${
-              busy || value.trim().length === 0 ? 'bg-track' : 'bg-primary'
-            }`}>
-            <Text
-              className={`text-base font-medium ${
-                busy || value.trim().length === 0 ? 'text-muted' : 'text-white'
-              }`}>
-              Add
-            </Text>
-          </Pressable>
-          <Meta>This is saved as self-reported until a health worker confirms it.</Meta>
-        </View>
-      </View>
-    </Modal>
-  );
-}
-
 function RecordScreen({ onOpenReferrals }: { onOpenReferrals: () => void }) {
   const router = useRouter();
   const [claims, setClaims] = useState<Claim[] | null>(null);
@@ -334,7 +247,7 @@ function RecordScreen({ onOpenReferrals }: { onOpenReferrals: () => void }) {
             </Text>
             <Text className="max-w-[280px] text-center text-sm leading-5 text-muted">
               {filter === 'ALL'
-                ? 'Add your allergies and medicines, or let a health worker record a visit for you.'
+                ? 'Type an allergy, photograph a prescription, or let a health worker record a visit for you.'
                 : 'Try another filter, or add something yourself.'}
             </Text>
           </View>
@@ -365,7 +278,7 @@ function RecordScreen({ onOpenReferrals }: { onOpenReferrals: () => void }) {
       </ScrollView>
 
       {adding ? (
-        <AddSheet
+        <AddEntrySheet
           onClose={() => setAdding(false)}
           onAdded={(claim) => setClaims((prev) => [...(prev ?? []), claim])}
         />
