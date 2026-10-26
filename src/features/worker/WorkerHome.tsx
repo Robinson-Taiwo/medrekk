@@ -11,7 +11,7 @@ import { Card, Meta } from '@/components/design/primitives';
 import { BottomTabInset } from '@/constants/theme';
 
 export default function WorkerHome() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const router = useRouter();
   const session = useWorkerSession();
   const model = useModelStatus();
@@ -24,7 +24,10 @@ export default function WorkerHome() {
   useFocusEffect(
     useCallback(() => {
       if (!session) void restoreWorkerSession(user?.id);
-    }, [session, user?.id]),
+      // An approval happens on somebody else's screen, so without this the worker would go
+      // on being told their licence was pending until they signed out and back in.
+      if (user?.credentialStatus !== 'APPROVED') void refreshUser();
+    }, [session, user?.id, user?.credentialStatus, refreshUser]),
   );
 
   const approved = session?.status === 'APPROVED';
@@ -72,6 +75,27 @@ export default function WorkerHome() {
             </Pressable>
           </Card>
         )}
+
+        {user?.credentialStatus !== 'APPROVED' ? (
+          <Pressable onPress={() => router.push('/worker-credential')}>
+            <Card className="gap-2 border-warn-soft bg-warn-soft p-4">
+              <View className="flex-row items-center gap-2">
+                <Feather name="award" size={16} color="#B45309" />
+                <Text className="text-[13px] font-semibold text-warn">
+                  {user?.licence ? 'Licence under review' : 'Add your licence'}
+                </Text>
+              </View>
+              <Text className="text-[13px] leading-5 text-muted">
+                {user?.licence
+                  ? 'Someone is checking your number against the register. You can keep working while they do.'
+                  : 'You can find a patient and record a visit now. Confirming what is already in a record needs your licence first.'}
+              </Text>
+              <Text className="text-[13px] font-medium text-primary">
+                {user?.licence ? 'Review what you sent' : 'Add it now'}
+              </Text>
+            </Card>
+          </Pressable>
+        ) : null}
 
         <View className="gap-2">
           <Text className="text-[11px] font-medium uppercase tracking-wider text-muted">On-device AI</Text>

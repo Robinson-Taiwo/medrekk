@@ -6,6 +6,8 @@ import Feather from '@expo/vector-icons/Feather';
 
 import { useAuth } from '@/features/auth/AuthProvider';
 import { api } from '@/services/api';
+import { loadToken } from '@/services/session';
+import { addOwnRecord } from '@/features/auth/authApi';
 import { Card, Meta } from '@/components/design/primitives';
 import { BottomTabInset } from '@/constants/theme';
 
@@ -43,9 +45,10 @@ function Row({
 }
 
 export default function ProfileScreen() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, adoptSession } = useAuth();
   const router = useRouter();
   const [me, setMe] = useState<Me | null>(null);
+  const [ownRecordBusy, setOwnRecordBusy] = useState(false);
   const isWorker = user?.role === 'HEALTH_WORKER';
 
   useFocusEffect(
@@ -56,6 +59,27 @@ export default function ProfileScreen() {
         .catch(() => undefined);
     }, [isWorker]),
   );
+
+  /**
+   * Turning on a clinician's own record. The server mints a new token, because the one this
+   * phone holds was signed before the account had a record and the patient endpoints read
+   * the record out of the token — keeping the old one would have left them with a record the
+   * app could see and the server would not.
+   */
+  const startOwnRecord = async () => {
+    if (ownRecordBusy) return;
+    setOwnRecordBusy(true);
+    try {
+      const token = await loadToken();
+      if (!token) throw new Error('Sign in again first.');
+      await adoptSession(await addOwnRecord(token));
+      router.push('/record');
+    } catch (e) {
+      Alert.alert('Could not set that up', e instanceof Error ? e.message : 'Try again when you have a connection.');
+    } finally {
+      setOwnRecordBusy(false);
+    }
+  };
 
   const confirmSignOut = () =>
     Alert.alert('Sign out?', 'You will need your email and password to get back in.', [
@@ -98,12 +122,42 @@ export default function ProfileScreen() {
           </Text>
           <View className="divide-y divide-line overflow-hidden rounded-xl border border-line bg-surface">
             {isWorker ? (
-              <Row
-                icon="cpu"
-                title="On-device AI"
-                body="Download or remove the model"
-                onPress={() => router.push('/worker-model')}
-              />
+              <>
+                <Row
+                  icon="award"
+                  title="Your licence"
+                  body={
+                    user?.credentialStatus === 'APPROVED'
+                      ? 'Approved — you can confirm entries'
+                      : user?.licence
+                        ? 'Sent, waiting for review'
+                        : 'Needed before you can confirm entries'
+                  }
+                  onPress={() => router.push('/worker-credential')}
+                />
+                {/* Clinicians get ill too. One account, one email, both sides. */}
+                {user?.patientId ? (
+                  <Row
+                    icon="file-text"
+                    title="My own record"
+                    body="Your MedRekk record, as a patient"
+                    onPress={() => router.push('/record')}
+                  />
+                ) : (
+                  <Row
+                    icon="plus-circle"
+                    title="Use MedRekk for my own record"
+                    body="Get your own MedRekk code on this account"
+                    onPress={() => void startOwnRecord()}
+                  />
+                )}
+                <Row
+                  icon="cpu"
+                  title="On-device AI"
+                  body="Download or remove the model"
+                  onPress={() => router.push('/worker-model')}
+                />
+              </>
             ) : (
               <>
                 <Row
@@ -123,6 +177,13 @@ export default function ProfileScreen() {
                   title="Reach your card by phone"
                   body="Dial a short code, no internet needed"
                   onPress={() => router.push('/patient/ussd')}
+                />
+                {/* Patients can record by voice now, so they need the speech model too. */}
+                <Row
+                  icon="cpu"
+                  title="On-device AI"
+                  body="Download the speech model to add entries by voice"
+                  onPress={() => router.push('/worker-model')}
                 />
               </>
             )}

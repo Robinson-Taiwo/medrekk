@@ -18,7 +18,7 @@ import { findConflicts } from '@/features/worker/conflicts';
 import { structure } from '@/features/ai/structure';
 import { refreshModelStatus } from '@/features/ai/modelStore';
 import { refreshWhisperStatus, useWhisperStatus } from '@/features/ai/whisperStore';
-import { useVoiceCapture } from '@/features/ai/useVoiceCapture';
+import { useVoiceCapture, voiceAvailable } from '@/features/ai/useVoiceCapture';
 import { captureFromCamera, captureFromLibrary } from '@/features/ai/photo';
 import { Card, Meta } from '@/components/design/primitives';
 import { C } from '@/components/design/tokens';
@@ -60,7 +60,10 @@ export default function WorkerEncounterScreen() {
   const router = useRouter();
   const voice = useVoiceCapture();
   const whisper = useWhisperStatus();
-  const voiceReady = whisper.state === 'READY';
+  // The microphone module is missing on an install made before it was added; the speech
+  // model is a separate download. Either one means Voice cannot run.
+  const canRecord = voiceAvailable();
+  const voiceReady = canRecord && whisper.state === 'READY';
   const [reading, setReading] = useState(false);
   const [photoError, setPhotoError] = useState<string | null>(null);
 
@@ -262,7 +265,12 @@ export default function WorkerEncounterScreen() {
               })}
             </View>
 
-            {!voiceReady ? (
+            {!canRecord && captureMode === 'VOICE' ? (
+              <Text className="text-[13px] leading-5 text-muted">
+                This build does not include the microphone module, so Voice cannot run here. Use Type or Photo.
+              </Text>
+            ) : null}
+            {canRecord && !voiceReady ? (
               <Pressable onPress={() => router.push('/worker-model')} hitSlop={6}>
                 <Text className="text-[13px] text-muted">
                   Voice needs the speech model. <Text className="font-medium text-primary">Install it</Text>

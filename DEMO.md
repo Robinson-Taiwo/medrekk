@@ -35,13 +35,22 @@ With Postgres, register two accounts at the web sign-up and on the app:
 
 A PENDING worker can request access, record a visit and attach a document, but
 **cannot mark anything "clinically verified"**. If your demo shows verification,
-approve the worker first: the account whose email is in the server's
-`ADMIN_EMAILS` calls
+approve the worker first:
 
-```
-GET  /admin/health-workers?status=PENDING      → find the worker's userId
-POST /admin/health-workers/<userId>/credential  { "status": "APPROVED" }
-```
+1. On the server, set `ADMIN_EMAILS` to your own health-worker account's email
+   and restart. **With it blank, nobody can approve anyone** — this is the usual
+   reason a worker stays pending forever. The web sign-in rejects patient
+   accounts, so the admin must be a health-worker account.
+2. In the app, as the worker: **Profile → Your licence**. Pick the register
+   (MDCN for doctors, NMCN for nurses), enter the registration number, your
+   role, and photograph the licence. Send for review.
+3. On the web, signed in as the admin: open **/admin**, check the number against
+   the register it names, look at the photo, and click Approve.
+
+The worker's phone picks the approval up on its own — no need to sign out.
+
+Nothing is verified automatically. The approval is a person checking a number on
+a public register; say that plainly if asked rather than implying more.
 
 With the in-memory server, these already exist:
 
@@ -123,6 +132,8 @@ Same record, any phone.
 | Worker's access vanished after signing out | Fixed — it is restored from the account. If it is still missing, the server is running an old build. |
 | "No matching record found" | The name must match the registered name exactly. Check spelling before blaming the code. |
 | Worker cannot verify a claim | Their credential is PENDING. See step 2. |
+| /admin says this account cannot approve | Its email is not in `ADMIN_EMAILS` on the server. |
+| A clinician wants their own record | Profile → Use MedRekk for my own record. One account covers both. |
 | Draft says "Read on this phone" | Expected. The language model did not load; the note was still read on the handset. Carry on. |
 | Nothing found in a note | Real answer, not a failure. Tap **Add an item** and type it. |
 | Everything is empty | In-memory server restarted. Re-register and re-enter. This is why step 1 matters. |

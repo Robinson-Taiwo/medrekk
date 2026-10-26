@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
+import { NativeModules } from 'react-native';
 import { requestRecordingPermissionsAsync } from 'expo-audio';
 import AudioRecord, { type AudioChunkSubscription } from '@fugood/react-native-audio-pcm-stream';
 
@@ -48,16 +49,27 @@ const SETTLE_MS = 250;
 const MIN_SECONDS = 0.4;
 
 /**
- * The native module is only present in a build made after it was added, so an older install
- * resolves it to null. Caught here with a message a tester can act on, rather than surfacing
- * "Cannot read property 'init' of null" on the screen.
+ * Whether the microphone can actually be opened on this install.
+ *
+ * The package's own wrapper is a plain object whose methods always exist — `init` is
+ * `options => RNLiveAudioStream.init(options)` — so checking the wrapper proved nothing and
+ * the earlier guard passed on every build. What is missing on an install made before the
+ * package was added is the native module underneath, and the first sign of it was
+ * "Cannot read property 'init' of null" on screen the moment someone tapped record.
+ *
+ * Checked at the only layer that tells the truth, and exported so a screen can leave the
+ * option out rather than offer a button that fails.
  */
+export function voiceAvailable(): boolean {
+  return Boolean(NativeModules.RNLiveAudioStream);
+}
+
+const NO_NATIVE =
+  'Speaking needs a newer build of MedRekk — this install does not have the microphone module. Use Type or Photo.';
+
 function recorder(): typeof AudioRecord {
-  const mod = AudioRecord as typeof AudioRecord | null;
-  if (!mod || typeof mod.init !== 'function') {
-    throw new Error('Voice needs a newer build of MedRekk. Use Type or Photo for now.');
-  }
-  return mod;
+  if (!voiceAvailable()) throw new Error(NO_NATIVE);
+  return AudioRecord;
 }
 
 /**

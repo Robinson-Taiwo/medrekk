@@ -7,7 +7,7 @@ import {
   saveToken,
   setUnauthorizedHandler,
 } from '@/services/session'
-import { ApiError, fetchMe, login, register, type PublicUser, type Role } from './authApi'
+import { ApiError, fetchMe, login, register, type AuthResponse, type PublicUser, type Role } from './authApi'
 import { forgetUnlock, rememberUnlock, verifyUnlock } from './offlineUnlock'
 import { attachWorkerAccount, forgetWorkerSessionOnThisDevice } from '@/features/worker/workerSession'
 
@@ -26,6 +26,10 @@ interface AuthValue {
     phone?: string
   }) => Promise<void>
   signOut: () => Promise<void>
+  /** Replaces the stored session with one the server just issued. */
+  adoptSession: (next: AuthResponse) => Promise<void>
+  /** Re-reads the account from the server, for a change made elsewhere. */
+  refreshUser: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthValue | null>(null)
@@ -163,9 +167,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setStatus('signedIn')
   }, [])
 
+  /**
+   * Takes on a session the server just re-issued — turning on a clinician's own record mints
+   * a new token, because the one in hand was signed before the account had a record and the
+   * patient endpoints read the record out of the token.
+   */
+  const adoptSession = useCallback(async (next: AuthResponse) => {
+    await saveToken(next.token)
+    await saveCachedUser(next.user)
+    setUser(next.user)
+  }, [])
+
+  /** Re-reads the account after something on the server changed it, such as an approval. */
+  const refreshUser = useCallback(async () => {
+    try {
+      const token = await loadToken()
+      if (!token) return
+      const me = await fetchMe(token)
+      await saveCachedUser(me)
+      setUser(me)
+    } catch {
+      // Offline, or the server is unreachable. What is cached stays on screen.
+    }
+  }, [])
+
   const value = useMemo(
-    () => ({ status, user, signIn, signUp, signOut }),
-    [status, user, signIn, signUp, signOut],
+    () => ({ status, user, signIn, signUp, signOut, adoptSession, refreshUser }),
+    [status, user, signIn, signUp, signOut, adoptSession, refreshUser],
   )
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

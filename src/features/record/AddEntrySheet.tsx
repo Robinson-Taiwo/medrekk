@@ -6,7 +6,7 @@ import Feather from '@expo/vector-icons/Feather';
 import { api } from '@/services/api';
 import { Meta } from '@/components/design/primitives';
 import { captureFromCamera, captureFromLibrary, type PhotoText } from '@/features/ai/photo';
-import { useVoiceCapture } from '@/features/ai/useVoiceCapture';
+import { useVoiceCapture, voiceAvailable } from '@/features/ai/useVoiceCapture';
 import { useWhisperStatus } from '@/features/ai/whisperStore';
 
 export type AddCategory = 'ALLERGIES' | 'CURRENT_MEDICATIONS' | 'PAST_MEDICAL_HISTORY';
@@ -78,7 +78,10 @@ export default function AddEntrySheet({
 
   const voice = useVoiceCapture();
   const whisper = useWhisperStatus();
-  const voiceReady = whisper.state === 'READY';
+  // Two different reasons Speak may not work, and they need different answers: the handset
+  // build has no microphone module, or the speech model simply has not been downloaded.
+  const canRecord = voiceAvailable();
+  const voiceReady = canRecord && whisper.state === 'READY';
 
   const readPhoto = async (from: 'CAMERA' | 'LIBRARY') => {
     setError(null);
@@ -253,7 +256,15 @@ export default function AddEntrySheet({
 
               {mode === 'VOICE' ? (
                 <View className="gap-2.5 rounded-xl border border-line bg-surface p-3.5">
-                  {voiceReady ? (
+                  {!canRecord ? (
+                    <View className="gap-1">
+                      <Text className="text-[13px] font-medium text-ink">Speaking is not available on this build</Text>
+                      <Text className="text-[13px] leading-5 text-muted">
+                        This install does not include the microphone module. Use Type or Photo — a newer build will
+                        add it.
+                      </Text>
+                    </View>
+                  ) : voiceReady ? (
                     <>
                       <Meta>Say it in your own words. The audio never leaves this phone.</Meta>
                       <Pressable

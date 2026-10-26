@@ -1,5 +1,16 @@
 export type Role = 'PATIENT' | 'HEALTH_WORKER'
 
+export const LICENCE_BODIES = ['MDCN', 'NMCN', 'PCN', 'MLSCN', 'OTHER'] as const
+export type LicenceBody = (typeof LICENCE_BODIES)[number]
+
+export interface LicenceClaim {
+  body: LicenceBody
+  number: string
+  profession: string
+  submittedAt: string
+  documentId: string | null
+}
+
 export interface PublicUser {
   id: string
   email: string
@@ -7,6 +18,11 @@ export interface PublicUser {
   role: Role
   patientId: string | null
   facility: string | null
+  /** HEALTH_WORKER only. PENDING until somebody approves the licence. */
+  credentialStatus?: 'PENDING' | 'APPROVED' | null
+  /** What the worker says their registration is. Absent until they submit it. */
+  licence?: LicenceClaim
+  hasLicenceDocument?: boolean
   /** The number USSD recognises this account by. Null until the patient adds one. */
   phone: string | null
 }
@@ -85,3 +101,21 @@ export const register = (input: {
 }) => call<AuthResponse>('/auth/register', input)
 
 export const fetchMe = (token: string) => call<PublicUser>('/auth/me', undefined, token)
+
+export interface CredentialSubmission {
+  body: LicenceBody
+  number: string
+  profession: string
+  image?: { mime: 'image/jpeg' | 'image/png'; base64: string }
+}
+
+/** A health worker saying which register they are on, and showing the licence. */
+export const submitCredential = (input: CredentialSubmission, token: string) =>
+  call<PublicUser>('/auth/me/credential', input, token)
+
+/**
+ * A health worker turning on their own patient record. Returns a new token, because the old
+ * one was minted before the account had a record and the patient endpoints read it from there.
+ */
+export const addOwnRecord = (token: string) =>
+  call<AuthResponse>('/auth/me/patient-record', {}, token)
