@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
-import { FlatList, Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import type { ActiveAccessSession, PendingAccessRequest } from '@/features/access/accessApi';
 import Feather from '@expo/vector-icons/Feather';
@@ -297,49 +297,60 @@ export default function AccessRequestsScreen() {
           ) : undefined
         }
       />
-      {/* Same reason as the history screen: the FlatList is the scroller, not the Sheet. */}
-      <Sheet pad={false} scroll={false}>
-        <FlatList
-          data={requests}
-          keyExtractor={(r) => r.id}
-          contentContainerStyle={{ padding: 20, gap: 12, paddingBottom: BottomTabInset + 24 }}
-          scrollEnabled={false}
-          ListHeaderComponent={
-            <View className="gap-3 pb-1">
-              {error ? <Text className="text-[13px] text-danger">{error}</Text> : null}
+      {/*
+        A plain scrolling sheet, and no list component at all.
+        
+        This was a FlatList with scrollEnabled={false}, which is to say a FlatList used purely as
+        a layout container — everything on the screen lived in its ListHeaderComponent and it
+        relied on the Sheet beneath it to scroll. When the Sheet was told to stop scrolling (to
+        silence the nested-VirtualizedList warning this very arrangement produces) nothing was
+        left that could scroll, and a patient could no longer reach the Approve button on their
+        own request. That is as bad as this screen gets: consent you cannot give.
+        
+        Virtualising was never worth anything here. A patient has a handful of live grants and
+        almost always one pending request; mapping over them costs nothing and removes both the
+        warning and the class of bug that came with it.
+      */}
+      <Sheet pad={false}>
+        <View className="gap-3 px-5 pb-3 pt-5" style={{ paddingBottom: BottomTabInset + 24 }}>
+          {error ? <Text className="text-[13px] text-danger">{error}</Text> : null}
 
-              <Heading>Who can see your record</Heading>
-              {active.length === 0 ? (
-                <Empty
-                  icon="lock"
-                  title="Nobody has access"
-                  body="Your record is private. A request arrives here, and nothing is shared until you approve it."
-                />
-              ) : (
-                <View className="gap-2.5">
-                  {active.map((s) => (
-                    <ActiveCard key={s.id} item={s} onEnd={endAccess} />
-                  ))}
-                </View>
-              )}
-
-              <View className="pt-3">
-                <Heading
-                  right={requests.length > 0 ? <Chip tone="pending">{`${requests.length} waiting`}</Chip> : undefined}>
-                  Pending requests
-                </Heading>
-              </View>
+          <Heading>Who can see your record</Heading>
+          {active.length === 0 ? (
+            <Empty
+              icon="lock"
+              title="Nobody has access"
+              body="Your record is private. A request arrives here, and nothing is shared until you approve it."
+            />
+          ) : (
+            <View className="gap-2.5">
+              {active.map((s) => (
+                <ActiveCard key={s.id} item={s} onEnd={endAccess} />
+              ))}
             </View>
-          }
-          ListEmptyComponent={
+          )}
+
+          <View className="pt-3">
+            <Heading
+              right={requests.length > 0 ? <Chip tone="pending">{`${requests.length} waiting`}</Chip> : undefined}>
+              Pending requests
+            </Heading>
+          </View>
+
+          {requests.length === 0 ? (
             <Empty
               icon="inbox"
               title="Nobody is asking"
               body="When a health worker asks to read your record, the request shows up here with their name and reason."
             />
-          }
-          renderItem={({ item }) => <RequestCard item={item} onDecide={decide} />}
-        />
+          ) : (
+            <View className="gap-3">
+              {requests.map((item) => (
+                <RequestCard key={item.id} item={item} onDecide={decide} />
+              ))}
+            </View>
+          )}
+        </View>
       </Sheet>
     </Screen>
   );

@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Feather from '@expo/vector-icons/Feather';
 
 import { api } from '@/services/api';
+import { fetchWithCache } from '@/offline/cachedFetch';
 import { fetchVerifications, type VerificationEventView } from '@/features/verification/verificationApi';
 import { Card, Meta } from '@/components/design/primitives';
 import { explainSections, type ExplanationSections } from '@/features/ai/explain';
@@ -77,14 +78,20 @@ export default function ClaimDetailScreen() {
       setClaim(null);
       setOrigin([]);
       setEvents([]);
-      const claims = await api<Claim[]>('/patients/me/claims');
-      setClaim(claims.find((c) => c.id === id) ?? null);
+      // Through the cache, and keyed the same as the record screen's copy — so an entry whose
+      // card is visible offline opens offline, which is the only behaviour that makes sense.
+      const claims = await fetchWithCache<Claim[]>('claims', '/patients/me/claims');
+      setClaim(claims.data.find((c) => c.id === id) ?? null);
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong.');
     }
     try {
-      setOrigin(await api<EvidenceView[]>(`/patients/me/claims/${id}/origin`));
+      // Where the entry came from. Cached per claim, because it is small and because the
+      // provenance is the part a patient is most likely to want to re-check later, including
+      // somewhere with no signal.
+      const seen = await fetchWithCache<EvidenceView[]>(`origin-${id}`, `/patients/me/claims/${id}/origin`);
+      setOrigin(seen.data);
     } catch {
       setOrigin([]);
     }

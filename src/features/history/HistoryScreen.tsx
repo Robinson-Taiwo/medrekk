@@ -5,6 +5,7 @@ import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, Tex
 import { api } from "@/services/api";
 import { fetchWithCache } from "@/offline/cachedFetch";
 import { Chrome, Screen, Sheet } from '@/components/design/split';
+import Feather from '@expo/vector-icons/Feather';
 import { C } from '@/components/design/tokens';
 import { BottomTabInset } from '@/constants/theme';
 
@@ -66,6 +67,41 @@ function Entry({ item }: { item: AuditEntry }) {
 
 /** One screenful and a bit, so the first page fills the view without a visible second fetch. */
 const PAGE = 25;
+
+/**
+ * How much of the trail this phone keeps for reading with no signal.
+ *
+ * Deeper than one page, because the offline copy is not a preview of the trail — it is the trail,
+ * for as long as the connection is gone. Somebody offline for a day should see the same history
+ * on the last look as on the first.
+ */
+const OFFLINE_KEEP = 60;
+
+/** Which audit types belong to each filter. Mirrors AUDIT_GROUPS on the server, so the same
+ *  filter gives the same answer whether it is applied there or here. */
+const GROUP_TYPES: Record<Exclude<GroupKey, 'all'>, readonly string[]> = {
+  views: ['RECORD_VIEWED', 'EMERGENCY_ACCESSED', 'USSD_ACCESSED', 'REFERRAL_VIEWED'],
+  access: [
+    'ACCESS_SESSION_STARTED',
+    'ACCESS_REQUESTED',
+    'ACCESS_APPROVED',
+    'ACCESS_DENIED',
+    'ACCESS_REVOKED',
+    'ACCESS_RELEASED',
+    'ACCESS_RESUMED',
+  ],
+  changes: [
+    'EVIDENCE_ADDED',
+    'CLAIM_VERIFIED',
+    'CLAIM_REMOVED',
+    'EMERGENCY_PROFILE_VERIFIED',
+    'EMERGENCY_CARD_UPDATED',
+    'ENCOUNTER_RECORDED',
+    'ENCOUNTER_REVIEWED',
+    'ENCOUNTER_DISCARDED',
+  ],
+  sharing: ['REFERRAL_CREATED', 'REFERRAL_REVOKED'],
+};
 
 /**
  * The questions people actually open this screen to ask, in their words. The group names are
@@ -176,6 +212,7 @@ export default function HistoryScreen() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [group, setGroup] = useState<GroupKey>('all');
   const [range, setRange] = useState<RangeKey>('all');
+  const [offline, setOffline] = useState(false);
 
   /** Every request carries the filters, including the ones for later pages. */
   const query = useCallback(
@@ -203,22 +240,67 @@ export default function HistoryScreen() {
    * Caching per filter combination would fill the table with near-duplicates of the same rows,
    * so a filtered view offline shows nothing rather than something subtly wrong.
    */
-  const cacheable = group === 'all' && range === 'all';
+  const unfiltered = group === 'all' && range === 'all';
 
+  /** The cached slice of the trail, filtered here rather than on a server we cannot reach. */
+  const fromCache = useCallback(async (): Promise<AuditEntry[] | null> => {
+    try {
+      const cached = await fetchWithCache<AuditPage | AuditEntry[]>(
+        'audit-offline',
+        `/patients/me/audit?limit=${OFFLINE_KEEP}`,
+      );
+      const all = asPage(cached.data).items;
+      const types = group === 'all' ? null : GROUP_TYPES[group];
+      const since = sinceFor(range);
+      const after = since ? Date.parse(since) : null;
+      return all.filter(
+        (e) =>
+          (!types || types.includes(e.type)) &&
+          (after === null || Date.parse(e.occurredAt) >= after),
+      );
+    } catch {
+      return null;
+    }
+  }, [group, range]);
+
+  /**
+   * Live where possible, from the kept copy where not — including with a filter applied.
+   *
+   * Filtering used to go to the server unconditionally, so a filter tapped with no signal failed,
+   * and because a filter change clears the list first, going back to Everything left the screen
+   * empty as well. A trail already sitting on the handset can be filtered on the handset; the
+   * only thing a filtered view genuinely needs the network for is the pages behind the kept
+   * slice, and those announce themselves by their absence rather than by an error.
+   */
   const load = useCallback(async () => {
     try {
-      const body = cacheable
-        ? (await fetchWithCache<AuditPage | AuditEntry[]>('audit-first-page', query())).data
+      const body = unfiltered
+        ? (
+            await fetchWithCache<AuditPage | AuditEntry[]>(
+              'audit-offline',
+              `/patients/me/audit?limit=${OFFLINE_KEEP}`,
+            )
+          ).data
         : await api<AuditPage | AuditEntry[]>(query());
       const page = asPage(body);
       inFlight.current = false;
       setItems(page.items);
       setCursor(page.nextCursor);
+      setOffline(false);
       setError(null);
     } catch (e) {
+      const kept = await fromCache();
+      if (kept) {
+        inFlight.current = false;
+        setItems(kept);
+        setCursor(undefined); // there is no next page without a connection
+        setOffline(true);
+        setError(null);
+        return;
+      }
       setError(e instanceof Error ? e.message : "Something went wrong.");
     }
-  }, [query, cacheable]);
+  }, [query, unfiltered, fromCache]);
 
   const loadMore = useCallback(async () => {
     if (!cursor || inFlight.current) return;
@@ -283,6 +365,16 @@ export default function HistoryScreen() {
           </Text>
           <FilterRow options={GROUPS} value={group} onChange={setGroup} />
           <FilterRow options={RANGES} value={range} onChange={setRange} subdued />
+          {/* Said once, at the top, rather than as an error on a list that is working fine. */}
+          {offline ? (
+            <View className="flex-row items-center gap-2 rounded-xl bg-fill px-3 py-2">
+              <Feather name="download-cloud" size={13} color={C.muted} />
+              <Text className="flex-1 text-[11.5px] leading-[16px] text-muted">
+                Showing the copy saved on this phone — the most recent {OFFLINE_KEEP}. It will fill in when
+                you are back online.
+              </Text>
+            </View>
+          ) : null}
         </View>
 
         {error && !items ? (

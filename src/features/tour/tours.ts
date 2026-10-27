@@ -57,3 +57,44 @@ export const WORKER_TOUR: TourStep[] = [
     body: 'The model that reads notes runs on the handset, so nothing is sent away to be understood.',
   },
 ];
+
+/**
+ * The record screen, shown the first time somebody opens it.
+ *
+ * Two things, both of which are buttons people otherwise never press: the one that adds to the
+ * record, and the one that shares it. Neither is guessable from an icon.
+ */
+export const RECORD_TOUR: TourStep[] = [
+  {
+    spot: 'record-add',
+    title: 'Add anything you already have',
+    body: 'Type it, photograph the paper, or say it out loud. A whole report is kept as a document you can open and read, with the allergies and medicines in it listed underneath.',
+  },
+  {
+    spot: 'record-share',
+    title: 'Send a record on',
+    body: 'Making a referral gives one clinician a link to what you choose, for a limited time. They need no account, and it ends by itself.',
+  },
+  {
+    spot: 'record-filter',
+    title: 'Narrow it down',
+    body: 'Allergies, medicines, visits, test results. Everything here works with no network — the record lives on this phone.',
+  },
+];
+
+/**
+ * The emergency screen. The one screen whose whole point is what happens when the patient
+ * cannot explain any of this themselves.
+ */
+export const EMERGENCY_TOUR: TourStep[] = [
+  {
+    spot: 'emergency-qr',
+    title: 'This is what a responder scans',
+    body: 'It shows your blood group, severe allergies and who to call — and nothing else in your record. You can print it for a wallet or a fridge.',
+  },
+  {
+    spot: 'emergency-card',
+    title: 'Only what you put here is visible',
+    body: 'Anyone can read this card without your approval, so it holds the few facts that change treatment immediately. Everything else still needs you to say yes.',
+  },
+];

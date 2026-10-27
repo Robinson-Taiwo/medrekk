@@ -1,16 +1,5 @@
 import { useState } from 'react';
-import {
-  ActivityIndicator,
-  Image,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Image, Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import Feather from '@expo/vector-icons/Feather';
 
@@ -19,6 +8,7 @@ import { Meta } from '@/components/design/primitives';
 import { captureFromCamera, captureFromLibrary, type PhotoText } from '@/features/ai/photo';
 import { useVoiceCapture, voiceAvailable } from '@/features/ai/useVoiceCapture';
 import { structure } from '@/features/ai/structure';
+import { useKeyboardHeight } from '@/hooks/useKeyboardHeight';
 import { keepImage } from '@/features/record/evidenceImages';
 import { useWhisperStatus } from '@/features/ai/whisperStore';
 import { C } from '@/components/design/tokens';
@@ -215,21 +205,31 @@ export default function AddEntrySheet({
     }
   };
 
+  const keyboard = useKeyboardHeight();
   const recording = voice.stage === 'RECORDING';
   const canSave = !busy && value.trim().length > 0;
 
   return (
     <Modal transparent animationType="slide" onRequestClose={onClose}>
       {/*
-        The field sits at the bottom of a sheet, which is exactly where the keyboard lands. Without
-        this the caret, the Add button and the self-reported note were all underneath it, so you
-        typed blind. 'padding' on iOS shrinks the sheet; Android resizes its own window, so 'height'
-        lets the sheet re-measure into what is left rather than being pushed off the top.
+        The field sits at the bottom of a sheet, which is exactly where the keyboard lands.
+        
+        This was a KeyboardAvoidingView, which is the usual answer and does nothing here: a Modal
+        on Android is its own window and does not inherit the activity's adjustResize, so the
+        sheet kept being laid out against the full screen height and the field stayed buried. The
+        keyboard's own height is measured instead and the sheet is lifted by exactly that much.
+        
+        maxHeight shrinks alongside it, so a long capture scrolls inside what is left rather than
+        pushing the Add button off the top.
       */}
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        className="flex-1 justify-end bg-black/40">
-        <View className="max-h-[88%] gap-3 rounded-t-3xl bg-canvas p-5 pb-9">
+      <View className="flex-1 justify-end bg-black/40">
+        <View
+          className="gap-3 rounded-t-3xl bg-canvas p-5"
+          style={{
+            paddingBottom: keyboard > 0 ? 20 : 36,
+            marginBottom: keyboard,
+            maxHeight: keyboard > 0 ? '70%' : '88%',
+          }}>
           <View className="flex-row items-center justify-between">
             <Text className="text-lg font-semibold text-ink">Add to your record</Text>
             <Pressable onPress={onClose} hitSlop={8}>
@@ -432,7 +432,7 @@ export default function AddEntrySheet({
             </View>
           </ScrollView>
         </View>
-      </KeyboardAvoidingView>
+      </View>
     </Modal>
   );
 }

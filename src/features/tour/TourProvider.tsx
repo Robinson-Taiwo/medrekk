@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { Dimensions, Modal, Pressable, Text, View, type LayoutChangeEvent } from 'react-native';
+import { Modal, Pressable, Text, View, useWindowDimensions, type LayoutChangeEvent } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
 
 import { C } from '@/components/design/tokens';
@@ -43,11 +43,21 @@ interface Rect {
   height: number;
 }
 
+/**
+ * Deliberately holds nothing that changes while a tour runs.
+ *
+ * This used to carry `running: steps !== null`, which meant the context value got a new identity
+ * the instant a tour started. Every useTourSpot has a cleanup keyed on that value, so starting
+ * the tour ran all of them at once and unregistered every target it was about to point at — the
+ * tour appeared, found nothing on screen, and closed itself. About one second, which is exactly
+ * what it looked like.
+ *
+ * Keep this stable. Anything that changes per step belongs in state inside the provider.
+ */
 interface TourApi {
   /** Starts a tour, unless one is already running. */
   start: (id: string, steps: TourStep[], onDone?: () => void) => void;
   register: (spot: string, rect: Rect | null) => void;
-  running: boolean;
 }
 
 const TourContext = createContext<TourApi | null>(null);
@@ -80,40 +90,61 @@ export function useTourSpot(spot: string): {
     return () => api?.register(spot, null);
   }, [api, spot]);
 
-  return {
-    ref: (n: View | null) => {
+  // Stable, so React does not detach and reattach the ref on every render — which, with the
+  // measure that follows it, meant every render scheduled another measurement.
+  const ref = useCallback(
+    (n: View | null) => {
       node.current = n;
       if (n) requestAnimationFrame(measure);
     },
-    onLayout: measure,
-  };
+    [measure],
+  );
+
+  return { ref, onLayout: measure };
 }
+
+/** Stable no-op outside a provider, so it does not become a new object on every render either. */
+const NO_TOUR: TourApi = { start: () => undefined, register: () => undefined };
 
 export function useTour(): TourApi {
-  return (
-    useContext(TourContext) ?? {
-      start: () => undefined,
-      register: () => undefined,
-      running: false,
-    }
-  );
+  return useContext(TourContext) ?? NO_TOUR;
 }
 
-const SCREEN = Dimensions.get('window');
 const CARD_MARGIN = 16;
+/** Clear air between the card and the thing it is pointing at. The connector crosses it. */
+const GAP = 22;
 
 export function TourProvider({ children }: { children: ReactNode }) {
   const [steps, setSteps] = useState<TourStep[] | null>(null);
   const [index, setIndex] = useState(0);
-  const [, setTick] = useState(0);
+  // Bumped whenever a target registers or moves. Used as the memo dependency below, because a
+  // ref's contents are invisible to React and `spots.current.size` is read during render — it
+  // cannot be depended on to recompute anything.
+  const [version, setVersion] = useState(0);
   const spots = useRef(new Map<string, Rect>());
   const finish = useRef<(() => void) | undefined>(undefined);
+  // Read per render rather than once at module load, so a rotation or a resized window does not
+  // leave the overlay drawing against a screen size that no longer exists.
+  const { width: screenW, height: screenH } = useWindowDimensions();
 
   const register = useCallback((spot: string, rect: Rect | null) => {
-    if (rect) spots.current.set(spot, rect);
-    else spots.current.delete(spot);
-    // Nudges a render so a step waiting on a target that has just appeared can draw.
-    setTick((t) => t + 1);
+    const current = spots.current.get(spot);
+    if (rect) {
+      if (
+        current &&
+        current.x === rect.x &&
+        current.y === rect.y &&
+        current.width === rect.width &&
+        current.height === rect.height
+      ) {
+        return; // identical measurement, nothing to redraw
+      }
+      spots.current.set(spot, rect);
+    } else {
+      if (!current) return;
+      spots.current.delete(spot);
+    }
+    setVersion((v) => v + 1);
   }, []);
 
   const start = useCallback((_id: string, next: TourStep[], onDone?: () => void) => {
@@ -132,24 +163,32 @@ export function TourProvider({ children }: { children: ReactNode }) {
     finish.current = undefined;
   }, []);
 
-  const api = useMemo<TourApi>(
-    () => ({ start, register, running: steps !== null }),
-    [start, register, steps],
-  );
+  // start and register are both useCallback with no changing deps, so this value is created
+  // once and never again. That is the whole point — see the note on TourApi.
+  const api = useMemo<TourApi>(() => ({ start, register }), [start, register]);
 
   // Steps whose target is actually on screen. A tab that this role does not have, or a card that
   // only exists once there is data, simply drops out rather than pointing at nothing.
   const live = useMemo(
     () => (steps ?? []).filter((s) => spots.current.has(s.spot)),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [steps, spots.current.size],
+    // version, not spots.current.size: see the note where version is declared.
+    [steps, version],
   );
 
   const step = live[index];
   const rect = step ? spots.current.get(step.spot) : undefined;
 
+  /**
+   * A tour that can find none of its targets gives up — but only after giving them a moment to
+   * arrive. Closing on the first render would end every tour started before the tab bar has
+   * laid itself out, which is most of them.
+   */
   useEffect(() => {
-    if (steps !== null && live.length === 0) close();
+    if (steps === null || live.length > 0) return;
+    const grace = setTimeout(() => {
+      if (spots.current.size === 0) close();
+    }, 1200);
+    return () => clearTimeout(grace);
   }, [steps, live.length, close]);
 
   if (!step || !rect) {
@@ -164,15 +203,40 @@ export function TourProvider({ children }: { children: ReactNode }) {
     height: rect.height + pad * 2,
   };
 
-  // Below the target when there is room for the card, above it otherwise. A card that runs off
-  // the bottom of the screen is the usual way these go wrong on a short phone.
-  const below = hole.y + hole.height + 190 < SCREEN.height;
+  /*
+   * Which side of the target the card goes, and how tall it may be.
+   *
+   * Measured rather than guessed: whichever side has more clear space wins, and the card is
+   * capped at what that side actually offers. The card is then anchored GAP away from the hole
+   * edge, so it cannot overlap the thing it is describing no matter how long the text is — which
+   * was the whole complaint, and fair: a tutorial sitting on top of the button it is naming
+   * explains nothing.
+   */
+  const spaceAbove = hole.y - GAP - CARD_MARGIN;
+  const spaceBelow = screenH - (hole.y + hole.height) - GAP - CARD_MARGIN;
+  const below = spaceBelow >= spaceAbove;
+  // Floor high enough that the title, body and the Next button all survive. A card clipped
+  // short enough to hide its own button is worse than one that overlaps slightly.
+  const room = Math.max(below ? spaceBelow : spaceAbove, 230);
   const last = index === live.length - 1;
+
+  // The connector: a hairline from the card's edge to the ring, aligned with the target's centre
+  // so it reads as pointing AT something rather than merely sitting near it.
+  const pointerX = Math.min(Math.max(hole.x + hole.width / 2, CARD_MARGIN + 14), screenW - CARD_MARGIN - 14);
 
   return (
     <TourContext.Provider value={api}>
       {children}
-      <Modal transparent animationType="fade" statusBarTranslucent onRequestClose={close}>
+      {/*
+        No statusBarTranslucent, deliberately.
+        
+        With it, the Modal's origin is the physical top of the screen while measureInWindow
+        returns coordinates relative to the window, which on Android starts below the status bar.
+        Everything was therefore drawn one status-bar-height too low: the ring sat under its
+        target and the card slid down onto the tab bar it was supposed to be pointing at. Losing
+        the dimmed status bar is a small price for coordinates that mean what they say.
+      */}
+      <Modal transparent animationType="fade" onRequestClose={close}>
         {/* The four panes around the hole. Tapping any of them advances, which is what people
             try first, and the buttons below are for those who do not. */}
         <Pressable
@@ -200,12 +264,45 @@ export function TourProvider({ children }: { children: ReactNode }) {
             }}
           />
 
+          {/*
+            The connector. A hairline from the card to the ring, with a dot where it lands, so
+            the card reads as pointing at the control rather than merely appearing beside it.
+          */}
+          <View
+            pointerEvents="none"
+            style={{
+              position: 'absolute',
+              left: pointerX - 1,
+              width: 2,
+              backgroundColor: C.glow,
+              opacity: 0.7,
+              ...(below
+                ? { top: hole.y + hole.height, height: GAP }
+                : { top: hole.y - GAP, height: GAP }),
+            }}
+          />
+          <View
+            pointerEvents="none"
+            style={{
+              position: 'absolute',
+              left: pointerX - 4,
+              top: (below ? hole.y + hole.height : hole.y) - 4,
+              height: 8,
+              width: 8,
+              borderRadius: 4,
+              backgroundColor: C.glow,
+            }}
+          />
+
           <View
             style={{
               position: 'absolute',
               left: CARD_MARGIN,
               right: CARD_MARGIN,
-              ...(below ? { top: hole.y + hole.height + 14 } : { bottom: SCREEN.height - hole.y + 14 }),
+              maxHeight: room,
+              ...(below
+                ? { top: hole.y + hole.height + GAP }
+                : { bottom: screenH - hole.y + GAP }),
               borderRadius: 20,
               backgroundColor: C.surface,
               padding: 18,

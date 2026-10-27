@@ -8,6 +8,9 @@ import ReferralsFlow from '@/features/referrals/ReferralsFlow';
 import { C } from '@/components/design/tokens';
 import { Chrome, Empty, EntryRow, Pills, Screen, Sheet, StandingLegend, type Standing } from '@/components/design/split';
 import { CATEGORY_ICON, nounFor } from '@/features/record/categories';
+import { useTourSpot } from '@/features/tour/TourProvider';
+import { useScreenTour } from '@/features/tour/useScreenTour';
+import { RECORD_TOUR } from '@/features/tour/tours';
 import AddEntrySheet from '@/features/record/AddEntrySheet';
 
 interface Claim {
@@ -237,6 +240,11 @@ function RecordScreen({ onOpenReferrals }: { onOpenReferrals: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<string | null>(null);
 
+  const addSpot = useTourSpot('record-add');
+  const shareSpot = useTourSpot('record-share');
+  const filterSpot = useTourSpot('record-filter');
+  useScreenTour('record-v1', RECORD_TOUR);
+
   const load = useCallback(async () => {
     try {
       // The whole record, deliberately unpaged: it has to be readable with no connection, so
@@ -350,12 +358,16 @@ function RecordScreen({ onOpenReferrals }: { onOpenReferrals: () => void }) {
         right={
           <View className="flex-row gap-2">
             <Pressable
+              ref={shareSpot.ref}
+              onLayout={shareSpot.onLayout}
               onPress={onOpenReferrals}
               accessibilityLabel="Share your record"
               className="h-10 w-10 items-center justify-center rounded-xl bg-white/10">
               <Feather name="share-2" size={17} color={C.mist} />
             </Pressable>
             <Pressable
+              ref={addSpot.ref}
+              onLayout={addSpot.onLayout}
               onPress={() => setAdding(true)}
               accessibilityLabel="Add to your record"
               className="h-10 w-10 items-center justify-center rounded-xl"
@@ -367,7 +379,7 @@ function RecordScreen({ onOpenReferrals }: { onOpenReferrals: () => void }) {
       />
 
       <Sheet pad={false}>
-        <View className="pb-1 pt-4">
+        <View ref={filterSpot.ref} onLayout={filterSpot.onLayout} className="pb-1 pt-4">
           <Pills options={FILTER_PILLS} value={filter} onChange={setFilter} />
         </View>
 

@@ -6,6 +6,9 @@ import Feather from '@expo/vector-icons/Feather';
 
 import type { EmergencyProfileData } from './types';
 import EmergencyQr from './EmergencyQr';
+import { useTourSpot } from '@/features/tour/TourProvider';
+import { useScreenTour } from '@/features/tour/useScreenTour';
+import { EMERGENCY_TOUR } from '@/features/tour/tours';
 
 function Entry({ kind, value, danger = false }: { kind: string; value: string; danger?: boolean }) {
   return (
@@ -43,6 +46,10 @@ export default function EmergencyCard({
   onReviewAllergies,
   topInset = true,
 }: Props) {
+  const qrSpot = useTourSpot('emergency-qr');
+  const cardSpot = useTourSpot('emergency-card');
+  useScreenTour('emergency-v1', EMERGENCY_TOUR);
+
   const entries = [
     ...profile.criticalAllergies.map((value) => ({ kind: 'Severe allergy', value, danger: true })),
     ...profile.importantWarnings.map((value) => ({ kind: 'Warning', value, danger: true })),
@@ -79,7 +86,10 @@ export default function EmergencyCard({
 
       <Sheet>
         {/* The code, sized to be scanned off a stranger's screen. */}
-        <View className="items-center gap-2 rounded-2xl border border-line bg-surface px-4 py-5">
+        <View
+          ref={qrSpot.ref}
+          onLayout={qrSpot.onLayout}
+          className="items-center gap-2 rounded-2xl border border-line bg-surface px-4 py-5">
           <EmergencyQr />
         </View>
 
@@ -97,7 +107,7 @@ export default function EmergencyCard({
             onAction={onEdit}
           />
         ) : (
-          <View className="gap-2">
+          <View ref={cardSpot.ref} onLayout={cardSpot.onLayout} className="gap-2">
             <Text className="text-[11px] font-bold uppercase tracking-[1.2px] text-muted">On this card</Text>
             {/* Index included: a patient can type the same allergy twice, and kind+value
                 alone would then collide into one key. */}

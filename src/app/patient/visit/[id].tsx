@@ -5,7 +5,21 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Feather from '@expo/vector-icons/Feather';
 
 import { api } from '@/services/api';
+import { fetchWithCache } from '@/offline/cachedFetch';
+import { clearCache } from '@/offline/cache';
+import { useFeedback, reasonFor } from '@/components/design/feedback';
 import { localImageFor } from '@/features/record/evidenceImages';
+
+/** The document as the cached list carries it — including its full text. */
+interface CachedEntry {
+  id: string;
+  rawInput: string;
+  recordedByName: string;
+  recordedByFacility: string | null;
+  recordedAt: string;
+  authoredBy?: 'PATIENT' | 'WORKER';
+  imageHash?: string;
+}
 import { plainReport, type PlainLine } from '@/features/ai/plainLanguage';
 import { Card, Meta } from '@/components/design/primitives';
 import { explainReport, type Section } from '@/features/ai/reportTemplates';
@@ -187,16 +201,76 @@ export default function VisitScreen() {
   const [claims, setClaims] = useState<Claim[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [showNote, setShowNote] = useState(false);
+  const [fromCache, setFromCache] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const { confirm, toast } = useFeedback();
 
+  /**
+   * Taking the visit back off the record.
+   *
+   * The warning says what actually happens, including the two things somebody would not guess:
+   * everything the visit produced goes with it, and the removal itself is written into the trail.
+   * A confirmation that only says "are you sure" teaches nobody anything.
+   */
+  const removeVisit = async () => {
+    if (!id || busy) return;
+    const count = claims.length;
+    const ok = await confirm({
+      title: 'Remove this visit?',
+      body:
+        count > 0
+          ? `The ${count === 1 ? 'entry' : `${count} entries`} it added to your record will be removed with it, and any allergy among them comes off your emergency card. Your history will show that you removed something on this date, but not what it was. This cannot be undone.`
+          : 'Your history will show that you removed something on this date, but not what it was. This cannot be undone.',
+      confirmLabel: 'Remove it',
+      cancelLabel: 'Keep it',
+      destructive: true,
+    });
+    if (!ok) return;
+
+    setBusy(true);
+    try {
+      await api(`/patients/me/entries/${id}`, { method: 'DELETE' });
+      // The cached copies still hold it, and the record screen reads them.
+      await clearCache();
+      toast({ tone: 'ok', title: 'Removed from your record' });
+      router.navigate('/record');
+    } catch (e) {
+      setBusy(false);
+      toast({ tone: 'error', title: 'Could not remove it', body: reasonFor(e) });
+    }
+  };
+
+  /**
+   * Both halves come through the cache, and both are already in it.
+   *
+   * The record screen caches the claims and the document list, and the document list now carries
+   * each document's full text — so by the time a card is on screen, everything needed to open it
+   * is on the handset. This used to call the bare client twice, which is why a patient with no
+   * signal could see their cards and open none of them.
+   */
   const load = useCallback(async () => {
     if (!id) return;
     try {
-      const [found, all] = await Promise.all([
-        api<Visit>(`/patients/me/encounters/${id}`),
-        api<Claim[]>('/patients/me/claims'),
+      const [entries, all] = await Promise.all([
+        fetchWithCache<CachedEntry[]>('entries', '/patients/me/entries'),
+        fetchWithCache<Claim[]>('claims', '/patients/me/claims'),
       ]);
-      setVisit(found);
-      setClaims(all.filter((c) => c.encounterId === id));
+
+      const found = entries.data.find((e) => e.id === id);
+      if (!found) throw new Error('This visit is not on this phone.');
+
+      setVisit({
+        id: found.id,
+        rawInput: found.rawInput,
+        recordedByName: found.recordedByName,
+        recordedByFacility: found.recordedByFacility,
+        recordedAt: found.recordedAt,
+        status: 'REVIEWED',
+        ...(found.imageHash ? { imageHash: found.imageHash } : {}),
+        authoredBy: found.authoredBy,
+      });
+      setClaims(all.data.filter((c) => c.encounterId === id));
+      setFromCache(entries.fromCache || all.fromCache);
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong.');
@@ -307,6 +381,26 @@ export default function VisitScreen() {
           This page shows what was recorded at the visit and explains the terms in it. It is not a diagnosis and not a
           recommendation.
         </Meta>
+
+        {/*
+          Last, and quiet. Removing a visit is a thing a patient is entitled to do — the record is
+          theirs, including the parts they disagree with — but it is not what this screen is for,
+          so it does not compete with reading.
+        */}
+        <Pressable
+          onPress={() => void removeVisit()}
+          disabled={busy || fromCache}
+          className={`mt-2 h-12 flex-row items-center justify-center gap-2 rounded-xl border border-line bg-surface ${
+            busy || fromCache ? 'opacity-40' : ''
+          }`}>
+          <Feather name="trash-2" size={15} color={C.danger} />
+          <Text className="text-[14px] font-medium text-danger">
+            {busy ? 'Removing…' : 'Remove this visit from my record'}
+          </Text>
+        </Pressable>
+        {fromCache ? (
+          <Meta>Removing needs a connection, so that the change reaches your record and not just this phone.</Meta>
+        ) : null}
       </Sheet>
     </Screen>
   );
