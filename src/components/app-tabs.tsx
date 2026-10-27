@@ -44,14 +44,14 @@ const WORKER_TABS: TabSpec[] = [
  * the model screen the worker has — without a fifth-and-a-half tab, and without pushing a
  * route the navigator never registered for them, which simply did nothing when tapped.
  */
-const PATIENT_HIDDEN = ['worker-model'];
+const PATIENT_HIDDEN = ['worker-model', 'about'];
 
 /**
  * Not in the bar, but reachable. The credential screen is a thing a worker visits once, and
  * `record` is their own record — present only once they have turned one on, which is why it
  * is registered rather than given a tab.
  */
-const WORKER_HIDDEN = ['worker-credential', 'record'];
+const WORKER_HIDDEN = ['worker-credential', 'record', 'about'];
 
 /** Typed locally: @react-navigation/bottom-tabs is a transitive dependency without its own types here. */
 interface TabRoute {

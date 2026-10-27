@@ -226,6 +226,16 @@ export default function ProfileScreen() {
           </View>
         </View>
 
+        {/* Outside the role branch: a health worker has as much reason to read this as a patient. */}
+        <View className="overflow-hidden rounded-2xl border border-line bg-surface">
+          <Row
+            icon="info"
+            title="About MedRekk"
+            body="What this is, and the website"
+            onPress={() => router.push('/about')}
+          />
+        </View>
+
         <Pressable
           onPress={confirmSignOut}
           className="h-[52px] flex-row items-center justify-center gap-2 rounded-xl border border-line bg-surface">
