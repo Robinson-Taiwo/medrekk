@@ -15,7 +15,7 @@
       },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://medrekk-backend.rumptycloud.app",
-        "EXPO_PUBLIC_WEB_URL": "https://medrekk-web-chi.vercel.app"
+        "EXPO_PUBLIC_WEB_URL": "https://medrekk-web.rumptycloud.app"
       }
     },
     "production": {

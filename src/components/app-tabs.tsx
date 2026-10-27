@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/features/auth/AuthProvider';
 import { C } from '@/components/design/tokens';
+import { useTourSpot } from '@/features/tour/TourProvider';
 
 type IconName = keyof typeof Feather.glyphMap;
 
@@ -109,8 +110,33 @@ function TabBar({ state, navigation, tabs }: TabBarProps) {
         };
 
         return (
-          <Pressable
+          <TabButton
             key={route.key}
+            tab={tab}
+            focused={focused}
+            onPress={onPress}
+          />
+        );
+      })}
+      </View>
+    </View>
+  );
+}
+
+/**
+ * One tab, split out so it can hold a hook.
+ *
+ * useTourSpot has to be called per tab, and a hook cannot live inside the map callback it was
+ * previously written as — hook order would change with the number of tabs, which differs
+ * between a patient and a health worker.
+ */
+function TabButton({ tab, focused, onPress }: { tab: TabSpec; focused: boolean; onPress: () => void }) {
+  const spot = useTourSpot(`tab-${tab.name}`);
+
+  return (
+          <Pressable
+            ref={spot.ref}
+            onLayout={spot.onLayout}
             onPress={onPress}
             accessibilityRole="button"
             accessibilityState={{ selected: focused }}
@@ -154,10 +180,6 @@ function TabBar({ state, navigation, tabs }: TabBarProps) {
               {tab.label}
             </Text>
           </Pressable>
-        );
-      })}
-      </View>
-    </View>
   );
 }
 

@@ -11,6 +11,9 @@ import { Meta } from '@/components/design/primitives';
 import { C } from '@/components/design/tokens';
 import { Chrome, Screen, Sheet } from '@/components/design/split';
 import { useFeedback, reasonFor } from '@/components/design/feedback';
+import { useTour } from '@/features/tour/TourProvider';
+import { forgetTours } from '@/features/tour/tourStore';
+import { PATIENT_TOUR, WORKER_TOUR } from '@/features/tour/tours';
 
 interface Me {
   fullName: string;
@@ -47,6 +50,19 @@ function Row({
 
 export default function ProfileScreen() {
   const { toast, confirm } = useFeedback();
+  const { start } = useTour();
+
+  /**
+   * Back to the home tab first: every step points at the tab bar, and the bar is on screen from
+   * anywhere — but starting the tour from the profile tab would highlight tabs while the content
+   * behind them is the wrong screen, which reads as the app having jumped.
+   */
+  const replayTour = async () => {
+    const id = user?.id;
+    if (id) await forgetTours(id);
+    router.replace('/');
+    setTimeout(() => start('replay', user?.role === 'HEALTH_WORKER' ? WORKER_TOUR : PATIENT_TOUR), 450);
+  };
   const { user, signOut, adoptSession } = useAuth();
   const router = useRouter();
   const [me, setMe] = useState<Me | null>(null);
@@ -192,6 +208,18 @@ export default function ProfileScreen() {
                   title="On-device AI"
                   body="Download the speech model to add entries by voice"
                   onPress={() => router.push('/worker-model')}
+                />
+                {/*
+                  Replayable on purpose. The walk round shows itself once and then never again,
+                  which is right for somebody using their own phone and wrong for everyone else:
+                  a person demonstrating the app, a health worker showing a patient how it works,
+                  or anybody who skipped it and wishes they had not.
+                */}
+                <Row
+                  icon="compass"
+                  title="Show me around again"
+                  body="Replay the short introduction"
+                  onPress={() => void replayTour()}
                 />
               </>
             )}

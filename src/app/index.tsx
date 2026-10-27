@@ -4,6 +4,7 @@ import { Pressable, RefreshControl, Text, View } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
 
 import { useAuth } from '@/features/auth/AuthProvider';
+import { useFirstRunTour } from '@/features/tour/useFirstRunTour';
 import WorkerHome from '@/features/worker/WorkerHome';
 import { useAccessRequests } from '@/features/access/useAccessRequests';
 import { fetchWithCache } from '@/offline/cachedFetch';
@@ -106,6 +107,8 @@ function SetupStep({
 export default function Index() {
   const { toast } = useFeedback();
   const { user } = useAuth();
+  // The home tab is where everybody lands after signing in, so the walk round starts here.
+  useFirstRunTour(user?.id, user?.role);
   const router = useRouter();
   const { requests, active } = useAccessRequests();
 

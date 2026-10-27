@@ -265,7 +265,16 @@ export default function HistoryScreen() {
   return (
     <Screen>
       <Chrome title="Access history" subtitle="Every view of your record is written down" />
-      <Sheet pad={false}>
+      {/*
+        scroll={false}: the FlatList below is the scroller.
+        
+        Sheet scrolls by default, so the list was a VirtualizedList inside a ScrollView of the
+        same orientation. React Native warns about that because windowing stops working — the
+        list renders every row it has rather than the handful on screen, onEndReached fires
+        unpredictably, and the footer that carries the pager is laid out off in space nobody
+        scrolls to. That is why pagination kept not appearing.
+      */}
+      <Sheet pad={false} scroll={false}>
         {/* Outside the list on purpose: a filter that scrolls away with its own results, or
             vanishes while they load, is a filter you cannot undo without scrolling back. */}
         <View className="gap-2.5 border-b border-line px-5 pb-3.5 pt-4">

@@ -155,11 +155,25 @@ function DocRow({ row, onPress }: { row: Extract<Row, { kind: 'DOC' }>; onPress:
   const facility = entry.origin?.facility ?? entry.recordedByFacility ?? undefined;
 
   return (
-    <Pressable onPress={onPress} className="px-5 pb-2.5">
-      <View className="overflow-hidden rounded-2xl border border-line bg-surface">
-        <View className="flex-row items-center gap-2.5 border-b border-line bg-fill/60 px-3.5 py-2.5">
-          <View className="h-7 w-7 items-center justify-center rounded-lg bg-primary-soft">
-            <Feather name={capture.icon} size={13} color={C.primary} />
+    <Pressable onPress={onPress} className="px-4 pb-2.5">
+      {/*
+        Borderless, lifted, with the capture tile grown into a real leading block.
+        
+        A bordered card inside a list of bordered cards draws a line around every item; the
+        shadow does the separating instead, and the page tint behind does the rest.
+      */}
+      <View
+        className="overflow-hidden rounded-2xl bg-surface"
+        style={{
+          shadowColor: '#0B1A17',
+          shadowOpacity: 0.05,
+          shadowRadius: 10,
+          shadowOffset: { width: 0, height: 3 },
+          elevation: 2,
+        }}>
+        <View className="flex-row items-center gap-2.5 px-3.5 pb-2 pt-3">
+          <View className="h-9 w-9 items-center justify-center rounded-xl bg-primary-soft">
+            <Feather name={capture.icon} size={15} color={C.primary} />
           </View>
           <View className="min-w-0 flex-1">
             <Text numberOfLines={1} className="text-[13px] font-semibold text-ink">
@@ -176,7 +190,7 @@ function DocRow({ row, onPress }: { row: Extract<Row, { kind: 'DOC' }>; onPress:
           </Text>
         </View>
 
-        <View className="px-3.5 py-3">
+        <View className="px-3.5 pb-3.5 pt-1">
           {/* The document's own words, not a label describing it. Three lines is enough to
               recognise which one this is without opening it. */}
           {entry.preview.length > 0 ? (

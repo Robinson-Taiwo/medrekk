@@ -41,6 +41,20 @@ export function getDb(): Promise<SQLite.SQLiteDatabase> {
 
         CREATE INDEX IF NOT EXISTS sync_queue_pending
           ON sync_queue (sync_status, created_at);
+
+        /*
+         * Which introductions this person has already been shown.
+         *
+         * Outside record_cache on purpose: clearCache() empties that table on sign-out, and
+         * being taught the app again every time you sign back in would be a bug rather than a
+         * welcome. A different user id on the same handset still gets its own tour.
+         */
+        CREATE TABLE IF NOT EXISTS tour_seen (
+          user_id TEXT NOT NULL,
+          tour TEXT NOT NULL,
+          seen_at TEXT NOT NULL,
+          PRIMARY KEY (user_id, tour)
+        );
       `);
       return db;
     })().catch((e) => {

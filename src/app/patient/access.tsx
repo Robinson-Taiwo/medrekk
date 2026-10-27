@@ -297,7 +297,8 @@ export default function AccessRequestsScreen() {
           ) : undefined
         }
       />
-      <Sheet pad={false}>
+      {/* Same reason as the history screen: the FlatList is the scroller, not the Sheet. */}
+      <Sheet pad={false} scroll={false}>
         <FlatList
           data={requests}
           keyExtractor={(r) => r.id}

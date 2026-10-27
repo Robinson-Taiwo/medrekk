@@ -31,12 +31,16 @@ export type Standing = 'CLINICALLY_VERIFIED' | 'EVIDENCE_BACKED' | 'SELF_REPORTE
  * that is read at a glance and the thing a colour-blind reader cannot use, so the word always
  * travels with it.
  */
-export const STANDING: Record<Standing, { label: string; line: string; text: string; soft: string }> = {
-  CLINICALLY_VERIFIED: { label: 'Confirmed by a clinician', line: C.primary, text: 'text-primary', soft: 'bg-primary-soft' },
-  EVIDENCE_BACKED: { label: 'Backed by a document', line: C.evidence, text: 'text-evidence', soft: 'bg-evidence-soft' },
-  SELF_REPORTED: { label: 'You added this', line: C.muted, text: 'text-muted', soft: 'bg-neutral-soft' },
-  UNVERIFIED: { label: 'Not yet reviewed', line: C.warn, text: 'text-warn', soft: 'bg-warn-soft' },
-  ALERT: { label: 'Allergy', line: C.danger, text: 'text-danger', soft: 'bg-danger-soft' },
+/**
+ * `soft` is a class, for a className. `wash` is the same colour as a value, for the places a
+ * class cannot reach — a backgroundColor computed at runtime, which is what the card tile needs.
+ */
+export const STANDING: Record<Standing, { label: string; line: string; text: string; soft: string; wash: string }> = {
+  CLINICALLY_VERIFIED: { label: 'Confirmed by a clinician', line: C.primary, text: 'text-primary', soft: 'bg-primary-soft', wash: C.primarySoft },
+  EVIDENCE_BACKED: { label: 'Backed by a document', line: C.evidence, text: 'text-evidence', soft: 'bg-evidence-soft', wash: C.evidenceSoft },
+  SELF_REPORTED: { label: 'You added this', line: C.muted, text: 'text-muted', soft: 'bg-neutral-soft', wash: C.neutralSoft },
+  UNVERIFIED: { label: 'Not yet reviewed', line: C.warn, text: 'text-warn', soft: 'bg-warn-soft', wash: C.warnSoft },
+  ALERT: { label: 'Allergy', line: C.danger, text: 'text-danger', soft: 'bg-danger-soft', wash: C.dangerSoft },
 };
 
 /* ---------------------------------------------------------------- *
@@ -210,16 +214,54 @@ export function EntryRow({
   onPress?: () => void;
 }) {
   const tone = STANDING[standing];
+
+  /*
+   * A card, not a row in a table.
+   *
+   * These were hairline-divided rows with a 3px keyline — correct, dense, and completely
+   * uniform, so a list of six read as one grey block and nothing in it invited a tap. Cards
+   * separated by space on a tinted page do the same job while giving each entry an edge, and
+   * the standing moves from a thin line into a colour-washed tile that is actually visible at
+   * arm's length.
+   *
+   * Separation by shadow rather than border: a border drawn around every card in a list adds
+   * five more lines to the screen, and lines are what made the old version feel like a form.
+   */
   const body = (
-    <View className="flex-row gap-3 border-b border-line px-5 py-3">
-      <View className="mt-[3px] w-[3px] rounded-full" style={{ backgroundColor: tone.line }} />
-      <View className="min-w-0 flex-1">
-        <Text className="text-[15px] font-semibold leading-[20px] tracking-tight text-ink">{title}</Text>
-        <Text className={`mt-1 text-[12px] font-medium ${tone.text}`}>{tone.label}</Text>
-        {meta ? <Text className="mt-0.5 text-[12px] text-muted">{meta}</Text> : null}
+    <View
+      className="mx-4 mb-2.5 flex-row items-center gap-3 overflow-hidden rounded-2xl bg-surface p-3"
+      style={{
+        shadowColor: '#0B1A17',
+        shadowOpacity: 0.05,
+        shadowRadius: 10,
+        shadowOffset: { width: 0, height: 3 },
+        elevation: 2,
+      }}>
+      {/* The leading tile. Carries the standing's colour as a wash, so the state is legible
+          before a single word is read. */}
+      <View
+        className="h-[46px] w-[46px] shrink-0 items-center justify-center rounded-xl"
+        style={{ backgroundColor: tone.wash }}>
+        <View className="h-[7px] w-[7px] rounded-full" style={{ backgroundColor: tone.line }} />
       </View>
-      {right ? <Text className="pt-0.5 text-[12px] text-muted">{right}</Text> : null}
-      {onPress ? <Feather name="chevron-right" size={16} color={C.dim} style={{ marginTop: 2 }} /> : null}
+
+      <View className="min-w-0 flex-1">
+        <Text numberOfLines={2} className="text-[15px] font-semibold leading-[20px] tracking-tight text-ink">
+          {title}
+        </Text>
+        <View className="mt-1 flex-row items-center gap-1.5">
+          <Text className={`text-[12px] font-medium ${tone.text}`}>{tone.label}</Text>
+          {meta ? <Text className="text-[12px] text-dim">·</Text> : null}
+          {meta ? (
+            <Text numberOfLines={1} className="min-w-0 flex-1 text-[12px] text-muted">
+              {meta}
+            </Text>
+          ) : null}
+        </View>
+      </View>
+
+      {right ? <Text className="shrink-0 text-[12px] text-muted">{right}</Text> : null}
+      {onPress ? <Feather name="chevron-right" size={16} color={C.dim} /> : null}
     </View>
   );
   return onPress ? <Pressable onPress={onPress}>{body}</Pressable> : body;

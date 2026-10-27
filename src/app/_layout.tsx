@@ -11,6 +11,7 @@ import { useRouter } from 'expo-router'
 import AppTabs from '@/components/app-tabs'
 import { AuthProvider, useAuth } from '@/features/auth/AuthProvider'
 import { FeedbackProvider } from '@/components/design/feedback'
+import { TourProvider } from '@/features/tour/TourProvider'
 import AuthScreen from '@/features/auth/AuthScreen'
 import { useSyncOnReconnect } from '@/sync/useSyncOnReconnect'
 import { attachNotificationTaps } from '@/features/notifications/push'
@@ -78,7 +79,10 @@ export default function RootLayout() {
     <ThemeProvider value={DefaultTheme}>
       <FeedbackProvider>
         <AuthProvider>
-          <Gate />
+          {/* Inside AuthProvider: the tour is keyed to who is signed in. */}
+          <TourProvider>
+            <Gate />
+          </TourProvider>
         </AuthProvider>
       </FeedbackProvider>
     </ThemeProvider>
