@@ -1,0 +1,75 @@
+---
+title: "System overview"
+description: "Three pieces, and what each is responsible for."
+---
+
+```
+ PATIENT PHONE                    BACKEND                      CLINICIAN
+ ┌──────────────┐                                             ┌──────────────┐
+ │ record       │                                             │ asks with a  │
+ │ (SQLite)     │                                             │ MedRekk code │
+ └──────┬───────┘                                             └──────┬───────┘
+        │                     ┌───────────────┐                      │
+        │  push notification  │ access        │  1. request ─────────┘
+        │ ◄───────────────────┤ session       │
+        │                     │ - scopes      │
+        │  2. approve, and    │ - expiry      │  3. scoped record, time-limited
+        │     narrow the ─────► - token hash  │ ─────────────────────►
+        │     scopes          └───────┬───────┘
+        │                             │
+        │                     ┌───────▼───────┐
+        │                     │ audit trail   │  every view, scan and dial-in
+        │ ◄───────────────────┤ (patient-only)│
+        └─────────────────────┴───────────────┘
+```
+
+## The pieces
+
+<AccordionGroup>
+  <Accordion title="The app — the patient's copy" icon="mobile">
+    Holds the record in SQLite and reads from it first. The network is an enhancement: a phone
+    with no signal can still show the whole record, every document in full, and the most recent
+    60 entries of the audit trail.
+
+    Health workers use the same app for the other side of the flow — looking a patient up,
+    requesting access, and recording a visit by typing, dictating or photographing it.
+  </Accordion>
+
+  <Accordion title="The backend — consent and the trail" icon="server">
+    Owns the parts that cannot live on a handset: who is allowed to see what, for how long, and
+    what was actually looked at. Express 5 and TypeScript, Zod at every boundary, Postgres in
+    production and an in-memory implementation behind the same interfaces for tests.
+  </Accordion>
+
+  <Accordion title="The web frontend — everyone without the app" icon="globe">
+    A clinician reads an approved record in a browser with no account. A responder looks up an
+    emergency card from a scanned QR. An administrator approves health-worker credentials. Next.js
+    16, App Router, server components unless state demands otherwise.
+  </Accordion>
+</AccordionGroup>
+
+## Three ways into a record
+
+| Route | Who uses it | What it needs |
+| --- | --- | --- |
+| The app | Patients, health workers | An install; works offline after first sign-in |
+| A browser | A clinician with an approved session | The link the patient approved. No account |
+| A phone keypad | A patient with no smartphone | A USSD code and a PIN. No app, no internet |
+
+The emergency card sits outside all three: it is readable from a QR by anyone, without approval,
+because the person it describes may be unable to give any.
+
+## Stack
+
+<CardGroup cols={3}>
+  <Card title="Mobile" icon="mobile">
+    Expo SDK 57 · React Native 0.86 · Expo Router · NativeWind v4 · expo-sqlite · llama.rn ·
+    ML Kit OCR
+  </Card>
+  <Card title="Backend" icon="server">
+    Express 5 · TypeScript (ESM) · Zod · Postgres · vitest
+  </Card>
+  <Card title="Web" icon="globe">
+    Next.js 16 · React 19 · Tailwind v4
+  </Card>
+</CardGroup>

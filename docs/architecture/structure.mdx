@@ -1,0 +1,61 @@
+---
+title: "Codebase structure"
+description: "A folder is a capability, not a layer."
+---
+
+The same rule holds in all three repositories: **a folder is a capability, not a layer.** There is
+no `components/`, `utils/` or `helpers/` bucket that every feature reaches into, because those
+become the place where unrelated things go to be near each other.
+
+## Backend
+
+```
+src/
+  routes/       thin HTTP: parse with Zod, call a service, return
+  services/     all the behaviour; knows nothing about Express
+  database/     repository interfaces + two implementations
+  shared/       types and schemas shared with the app
+  middleware/   auth, rate limiting, error shaping
+```
+
+Services take their dependencies as an object:
+
+```ts
+new AccessService({ repos, encounters, now: () => new Date(), push });
+```
+
+So a test builds an app with in-memory repositories and a fixed clock. That is why 24 suites run
+in 16 seconds with no database, and why time-dependent behaviour — a grant lapsing — is tested by
+moving the clock rather than by waiting.
+
+Because the Postgres and in-memory repositories satisfy the same interfaces, the config layer can
+enforce a rule that would otherwise be a comment: `AUTH_MODE=dev` is **refused** whenever
+`DATABASE_URL` is set.
+
+## Mobile
+
+```
+src/
+  app/                 screens only (Expo Router, file-based)
+  features/            one folder per capability
+    access/ record/ emergency/ ai/ tour/ notifications/ auth/ worker/
+  components/design/   Split layout primitives, tokens, toasts
+  offline/             SQLite cache and the cached-fetch seam
+  sync/                the queue for work recorded offline
+  hooks/
+```
+
+`components/design/tokens.ts` is the single source for colour. Before it there were **130
+hardcoded hex literals across 24 files**, drawn from three different grey families plus a stray
+blue — which is most of why the app read as inconsistent.
+
+## Web
+
+```
+src/
+  app/          routes; server components unless they need state
+  components/   night.tsx (primitives) · night-chrome.tsx (header/footer) · phone.tsx (mockups)
+```
+
+The phone mockups are rendered, not screenshotted, so they stay sharp at any size and are edited
+in the same tokens as the app.

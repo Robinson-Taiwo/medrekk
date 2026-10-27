@@ -1,0 +1,68 @@
+---
+title: "Offline"
+description: "What works with no connection, and how."
+---
+
+Offline is a seam in this codebase, not a feature. Reads go through one wrapper; writes recorded
+without a connection go into one queue.
+
+## What works with no network
+
+<CardGroup cols={2}>
+  <Card title="Your whole record" icon="file-text">
+    Every entry and every document, in full — not a summary. Opening a document offline works
+    because the document list carries its complete text.
+  </Card>
+  <Card title="Your emergency card and QR" icon="alert-circle">
+    Cached, and the QR holds a link rather than data, so it keeps working for whoever scans it.
+  </Card>
+  <Card title="Who can see your record" icon="shield">
+    Live grants are cached. They carry an expiry, so one that has lapsed displays as expired
+    rather than as access.
+  </Card>
+  <Card title="Your access history" icon="eye">
+    The most recent 60 entries, and the filters work against them on the phone.
+  </Card>
+</CardGroup>
+
+## What deliberately does not
+
+| | Why |
+| --- | --- |
+| Answering a pending request | It is decided over the network. A decline button that fails is worse than no button |
+| Paging past the kept 60 | Announced by the list ending, not by an error |
+| Removing a visit | A delete that happened on one phone only would be worse than none |
+
+## How reads work
+
+`fetchWithCache(key, path)` tries the network, writes what it gets to SQLite, and falls back to
+the stored copy on a connectivity failure. Cache rows are keyed by user id, so a second account on
+the same handset never sees the first one's record.
+
+```ts
+const result = await fetchWithCache<Claim[]>('claims', '/patients/me/claims');
+result.data;       // always usable
+result.fromCache;  // drives "Saved copy from 20 minutes ago"
+```
+
+<Tip>
+When a screen serves from cache it says so quietly — *"Saved copy from 20 minutes ago"* — rather
+than showing an error. An alarming red line above a perfectly good list is noise. The error
+appears only when there is genuinely nothing to show.
+</Tip>
+
+## How writes work
+
+Work recorded without a connection goes into a `sync_queue` table in the same database, in the
+**same transaction** as the data it belongs to, so a record and its queue row are saved together
+or not at all. On reconnect the queue drains to `/sync/push`, which is idempotent by
+`operationId` — a reply lost on the way back cannot file the same visit twice.
+
+## Sign-out clears it
+
+The token, the cached record, the kept documents and the stored unlock verifier all go. On a
+shared handset the previous person's record must not be readable in SQLite.
+
+<Note>
+This was a real bug. A comment claimed sign-out cleared the cache and nothing called `clearCache`.
+</Note>

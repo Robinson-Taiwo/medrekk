@@ -1,0 +1,62 @@
+---
+title: "medrekk-backend"
+description: "Express 5, TypeScript, Zod, Postgres."
+---
+
+<Card title="github.com/Robinson-Taiwo/medrekk-backend" icon="github" href="https://github.com/Robinson-Taiwo/medrekk-backend" />
+
+```bash
+npm install
+cp .env.example .env
+npm run dev        # http://localhost:4000
+npm test           # 24 suites
+npm run typecheck
+```
+
+## What it owns
+
+Consent, the audit trail, the record itself, referrals, USSD sessions, emergency profiles,
+credential approval, and the sync endpoint.
+
+## Storage
+
+Two implementations behind one set of interfaces.
+
+<Tabs>
+  <Tab title="In memory">
+    The default when `DATABASE_URL` is unset. Seeds demo accounts, loses everything on restart,
+    and is what the whole test suite runs against.
+  </Tab>
+  <Tab title="Postgres">
+    Set `DATABASE_URL` and `DATA_ENCRYPTION_KEY`. Record values are encrypted at rest; the audit
+    trail pages on a `seq` bigserial rather than a timestamp, because two events can share a
+    millisecond and a cursor that collides skips rows.
+  </Tab>
+</Tabs>
+
+<Warning>
+`DATA_ENCRYPTION_KEY` is not recoverable. Lose it and the stored record cannot be read — not by
+you, not by anyone. Back it up in a password manager before the first production write.
+</Warning>
+
+## Auth
+
+`AUTH_MODE=jwt` by default. `dev` trusts `x-actor-id` / `x-actor-role` headers with no token, and
+is refused in production and whenever `DATABASE_URL` is set.
+
+<Note>
+This defaulted to `dev` once. A host that never set the variable served an open record store —
+which is exactly the failure mode a default should never have.
+</Note>
+
+Patient authority is keyed on the patient id attached to the account, not on the role claim. A
+token saying `role: PATIENT` with no linked patient record gets a 403, not somebody else's data.
+
+## Layout
+
+```
+src/routes/        one file per area
+src/services/      the behaviour
+src/database/      repositories + postgres/ + memory implementations
+src/shared/        types and Zod schemas shared with the app
+```

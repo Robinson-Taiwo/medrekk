@@ -1,0 +1,47 @@
+---
+title: "Deploying to Rumpty Cloud"
+description: "The backend and the web frontend."
+---
+
+Both are standard Node deploys: connect the repository, set the environment variables, deploy.
+
+<Steps>
+  <Step title="Provision Postgres">
+    From the same dashboard. Set `DATABASE_URL` and generate a `DATA_ENCRYPTION_KEY`.
+
+    Starting up, the backend logs which store it is using. **`Storage: Postgres`** means data
+    survives restarts and the demo accounts do not exist — register your own.
+  </Step>
+
+  <Step title="Deploy the backend">
+    Set every variable from [Environment](/deploy/environment). `CORS_ORIGIN` must include the web
+    origin you are about to deploy.
+
+    ```bash
+    curl -s https://your-backend.rumptycloud.app/health
+    ```
+  </Step>
+
+  <Step title="Deploy the web frontend">
+    Set `NEXT_PUBLIC_API_URL` to the backend and `NEXT_PUBLIC_SITE_URL` to this deployment.
+  </Step>
+
+  <Step title="Check the one path that crosses everything">
+    Open the emergency QR in the app and scan it from a **different** phone. That single path
+    touches the app, the web frontend, the backend and CORS — so it fails for four reasons that
+    look identical from outside, and testing it catches all of them at once.
+  </Step>
+</Steps>
+
+## Two things that are easy to miss
+
+<AccordionGroup>
+  <Accordion title="A 404 on a route that exists" icon="triangle-alert">
+    The running build predates it. New backend routes need a redeploy; nothing about the source
+    being correct makes the deployed bundle contain it.
+  </Accordion>
+  <Accordion title="It works on one host and not the other" icon="triangle-alert">
+    Almost always `CORS_ORIGIN`. The browser blocks the request before it reaches the server, so
+    the server logs show nothing at all and the failure looks like a client bug.
+  </Accordion>
+</AccordionGroup>

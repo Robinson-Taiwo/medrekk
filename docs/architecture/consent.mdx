@@ -1,0 +1,67 @@
+---
+title: "The consent model"
+description: "How access is asked for, granted, narrowed and ended."
+---
+
+This is the part of MedRekk that everything else exists to serve.
+
+## The lifecycle
+
+<Steps>
+  <Step title="A worker asks">
+    They enter the patient's MedRekk code, the areas they need, a reason, and how long for. This
+    creates an access session with a hashed token — the raw token is returned once and never
+    stored.
+  </Step>
+  <Step title="The patient is told">
+    A push notification, because a request is open for a few minutes and the alternative is the
+    clinician saying "check your phone now". Before this existed, that was the actual workflow.
+  </Step>
+  <Step title="The patient decides">
+    They see the requester's name, facility and reason, and each area as its own switch. Approving
+    **fewer** areas than were asked for is a first-class outcome, not an edge case.
+  </Step>
+  <Step title="The grant runs down">
+    `grantedUntil` is set at approval. The session lapses on its own; the patient can also end it
+    early, and the worker can hand it back.
+  </Step>
+  <Step title="Everything lands in the trail">
+    The request, the decision, every subsequent read, and the ending — all written to a log only
+    the patient can open.
+  </Step>
+</Steps>
+
+## Scopes
+
+```
+ALLERGIES · CURRENT_MEDICATIONS · RECENT_ENCOUNTERS
+PAST_MEDICAL_HISTORY · LAB_RESULTS · REFERRALS · EMERGENCY_INFORMATION
+```
+
+Approved scopes must be a subset of the requested ones — the server rejects anything wider, so a
+client cannot quietly grant more than was asked.
+
+## Session states
+
+| State | Means |
+| --- | --- |
+| `AWAITING_REQUEST` | A token exists; nothing has been asked for yet |
+| `PENDING` | Asked for, waiting on the patient |
+| `APPROVED` | Live, until `grantedUntil` |
+| `DENIED` | Patient said no. Nothing shared |
+| `REVOKED` | Patient ended it early |
+| `RELEASED` | Worker handed it back — signing out, or finishing a visit |
+
+<Warning>
+Holding the session token is authority enough to **release** a grant, because releasing only ever
+reduces access. Everything that widens access requires the patient.
+</Warning>
+
+## A bug worth knowing about
+
+Signing out used to call `releaseAccess` and delete the worker's only copy of the token. Offline
+that call failed, so the grant stayed live on the server while no device could open it — and the
+patient went on being told somebody could read their record when nobody could.
+
+Grants are now keyed to the account rather than the handset, and picked up again on the next
+sign-in through `/access/mine`, with the token rotated on resume.

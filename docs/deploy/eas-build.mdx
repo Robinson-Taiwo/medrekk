@@ -1,0 +1,69 @@
+---
+title: "Building the app"
+description: "EAS Build, and the three things that fail the first attempt."
+---
+
+```bash
+cd medrekk
+npx eas-cli@latest build --profile preview --platform android
+```
+
+The `preview` profile produces an **APK** with a shareable install link — no Play Store, no device
+registration. Anyone can install it by tapping the link.
+
+## Before the first build
+
+<Steps>
+  <Step title="google-services.json must be tracked by git">
+    EAS uploads only files git knows about. A gitignored `google-services.json` fails the build
+    with *"google-services.json is missing"* — about twelve minutes in, after the dependency
+    install.
+
+    The file holds no private key. Its `api_key` is a client key scoped to the package name and
+    signing certificate, and it ships inside every APK regardless.
+  </Step>
+
+  <Step title="Its package name must match app.json exactly">
+    ```bash
+    node -e 'const j=require("./google-services.json");console.log(j.client.map(c=>c.client_info.android_client_info.package_name))'
+    ```
+
+    `android.package` from `app.json` must appear in that list, or the Google Services gradle
+    plugin fails with *"No matching client found"*.
+  </Step>
+
+  <Step title="Upload the FCM V1 key for push">
+    ```bash
+    npx eas-cli@latest credentials
+    ```
+
+    Android → **Google Service Account** → *Key for Push Notifications (FCM V1)*.
+
+    <Info>
+      The key goes to **EAS, not your backend**. Expo's push service is what talks to Firebase;
+      the backend only posts to Expo and needs nothing but `EXPO_PUSH_ENABLED=true`.
+    </Info>
+  </Step>
+</Steps>
+
+## Installing on an emulator
+
+The APK is `arm64-v8a` only, so on an Apple Silicon Mac an arm64 emulator takes it directly:
+
+```bash
+npx eas-cli@latest build:run -p android
+```
+
+<Warning>
+`INSTALL_FAILED_NO_MATCHING_ABIS` means the AVD is an x86_64 image. Create an arm64 one rather
+than rebuilding — adding `x86_64` to `buildArchs` roughly doubles the APK, because `llama.rn`
+ships large native libraries per architecture.
+
+Pick a **Google Play** system image: push needs Play services for FCM, and OCR pulls its model
+from the same place.
+</Warning>
+
+## Every JS change needs a build
+
+A preview APK carries a fixed bundle. Adding `expo-updates` lets JS-only fixes go over the air
+instead of costing 25 minutes each.

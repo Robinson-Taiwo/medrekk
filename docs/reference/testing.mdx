@@ -1,0 +1,49 @@
+---
+title: "Testing"
+description: "24 suites in 16 seconds, and the two that print instead of assert."
+---
+
+```bash
+cd medrekk-backend && npm test
+```
+
+## Why it is fast
+
+Every repository has an in-memory implementation behind the same interface the Postgres one
+satisfies, and services take their dependencies as an object. A test builds a whole app with
+in-memory storage and a fixed clock:
+
+```ts
+const app = buildApp({ config, now: () => new Date('2026-10-27T09:00:00Z') });
+```
+
+No container, no migrations, no cleanup between tests. Time-dependent behaviour — a grant lapsing
+— is tested by moving the clock rather than by waiting for it.
+
+<Warning>
+A test helper that builds a **new** app per call gives each caller its own store, which quietly
+makes isolation tests vacuous: "patient B cannot see patient A's data" passes whether or not any
+filtering exists. Tests that assert isolation must register both accounts on one app.
+</Warning>
+
+## What is covered
+
+Consent end to end, grant resume and token rotation, lapse normalisation, patient evidence,
+dual-role accounts, credential approval, audit paging and filtering, push dispatch, idempotent
+sync, USSD, emergency lookup, config refusals, crypto.
+
+## The two that print
+
+```bash
+cd medrekk && npm run check:plain
+cd medrekk && npm run check:lab
+```
+
+These print their output rather than asserting, because the right answer to *"is this sentence
+plain enough"* is a judgement a person makes and a matcher cannot. Each case earned its place by
+being wrong once — the heading `Chief Complaint` being explained as the abbreviation `c/o`, a
+combination strength `80/480mg` reported as `480mg`, an allergy line rendered as a prescription.
+
+The last of those is the one to watch. `Allergies: Penicillin` described as "an antibiotic used to
+treat bacterial infections" is a true sentence and the worst possible output: it reads as a
+prescription for the one drug this person must never be given.

@@ -1,0 +1,71 @@
+---
+title: "Design decisions"
+description: "The choices that were not obvious, and why."
+---
+
+<AccordionGroup>
+  <Accordion title="The on-device model is a bonus, not the product" icon="cpu">
+    Extraction and plain-language rewriting fall back to a reviewed glossary and deterministic
+    parsing whenever the model will not load — which on a cheap handset is most of the time. The
+    fallback is what ships and what gets demonstrated.
+
+    A system that works on the phones people actually own is a better story than inference that
+    needs 450MB downloaded first.
+  </Accordion>
+
+  <Accordion title="MedRekk never supplies a reference range" icon="flask">
+    A lab result is compared only against the interval printed on that same report. If none is
+    printed, it says so and stops.
+
+    Reference intervals vary by laboratory, assay, age, sex, pregnancy and altitude — a
+    haemoglobin range from a Lagos lab does not apply in Jos, which is 1,200m higher. A built-in
+    table would quietly turn every one of those differences into a false "below range" on
+    somebody's phone, and a false reassurance in the other direction.
+  </Accordion>
+
+  <Accordion title="A detected signal is never a diagnosis" icon="triangle-alert">
+    Out of range is common and often unimportant; in range rules nothing out. Every association is
+    phrased as *can be associated with*, never *you have*, and the suggested next step is the same
+    sentence for every flagged result — because distinguishing routine from urgent is a clinical
+    judgement, and getting it wrong in the reassuring direction is as harmful as the frightening
+    one.
+  </Accordion>
+
+  <Accordion title="The printed emergency card carries two facts" icon="printer">
+    Blood group and severe allergies. Everything else stays behind the QR.
+
+    Printing the whole card defeats the QR: nobody scans a square when the answer is written
+    beside it, and both things the scan exists for are lost — the record staying **current**, and
+    every look being **written down**. A card printed in January listing no allergies is worse
+    than no card once one is added in March.
+
+    A wallet is also lost far more often than it is used in an emergency, and a list of conditions
+    in a stranger's hands is the most sensitive and least urgent part of a record.
+  </Accordion>
+
+  <Accordion title="A patient may delete what a clinician wrote" icon="trash-2">
+    If the record belongs to the patient, it belongs to them including the parts they disagree
+    with. Everything the visit produced goes with it, and any allergy among them comes off the
+    emergency card.
+
+    Soft-deleted, so the trail can record that something was removed on a date without recording
+    what. That is what keeps the claim honest.
+  </Accordion>
+
+  <Accordion title="The image never leaves the phone" icon="camera">
+    Only a SHA-256 is sent. A clinician who later doubts a document can be shown the patient's own
+    copy and check it is byte-for-byte the one attached — without MedRekk ever holding it.
+
+    The file is kept in `documentDirectory`, not the cache the OS reclaims. It was in the cache
+    once, which meant attachments were being deleted by the system: a record claiming a document
+    behind it that could not produce one.
+  </Accordion>
+
+  <Accordion title="Dev auth is refused, not discouraged" icon="lock">
+    `AUTH_MODE` defaults to `jwt` and `dev` is rejected outright in production and whenever
+    `DATABASE_URL` is set.
+
+    It defaulted to `dev` once. A host that never set the variable served an open record store —
+    which is exactly what a default must never do.
+  </Accordion>
+</AccordionGroup>

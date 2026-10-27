@@ -1,0 +1,61 @@
+---
+title: "medrekk"
+description: "The Expo app, for patients and health workers."
+---
+
+<Card title="github.com/Robinson-Taiwo/medrekk" icon="github" href="https://github.com/Robinson-Taiwo/medrekk" />
+
+```bash
+npm install
+npx expo start
+npm run typecheck
+npm run check:plain   # plain-language rewriter
+npm run check:lab     # lab-report reader
+```
+
+## One app, two roles
+
+The signed-in account's role decides which app you get. A patient sees their record, emergency
+card, access control and history; a health worker sees patient lookup, visit capture and the
+on-device model. Dual-role accounts are supported — a doctor is also somebody's patient.
+
+## Capture
+
+A patient or worker can add to a record three ways, and all three produce the same thing: a
+**document**, kept in full, with whatever was extracted from it listed underneath.
+
+<CardGroup cols={3}>
+  <Card title="Type" icon="keyboard">Up to 5,000 characters. Paste a whole report</Card>
+  <Card title="Photograph" icon="camera">ML Kit reads printed text. The image stays on the phone</Card>
+  <Card title="Speak" icon="mic">Dictated and transcribed on the device</Card>
+</CardGroup>
+
+<Info>
+Only a SHA-256 of a photographed document is sent. The image never leaves the handset — so a
+clinician who later doubts a document can be shown the patient's own copy and check it is
+byte-for-byte the one attached, without MedRekk ever holding it.
+</Info>
+
+## Plain language
+
+Clinical shorthand is decoded rather than defined:
+
+```
+Tab Ciprotab 500mg BD x 4/7
+→ Ciprofloxacin (written here as Ciprotab) — an antibiotic used for urinary,
+  gut and some other bacterial infections. Take 500mg, twice a day, for 4 days.
+```
+
+`BD` is twice a day, `x 4/7` is four days, `x 2/52` is two weeks, `PRN` is only when needed.
+None of that is taught outside the profession.
+
+<Note>
+This runs on a reviewed glossary and deterministic parsing, not a model. It works on a phone with
+nothing downloaded, which is most phones. The on-device model is an enhancement when it loads.
+</Note>
+
+## Design system
+
+`components/design/split.tsx` — dark chrome carrying identity and state, a bright sheet of
+content lifted over it, a floating tab bar whose open tab rises rather than lights up. Colour
+comes only from `tokens.ts`.

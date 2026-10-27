@@ -1,0 +1,70 @@
+---
+title: "Quickstart"
+description: "Backend, web and app running locally in about five minutes."
+---
+
+All three repositories use **npm**. Clone them side by side.
+
+```bash
+git clone https://github.com/Robinson-Taiwo/medrekk.git
+git clone https://github.com/Robinson-Taiwo/medrekk-backend.git
+git clone https://github.com/Robinson-Taiwo/medrekk-web.git
+```
+
+<Steps>
+  <Step title="Start the backend">
+    ```bash
+    cd medrekk-backend
+    npm install
+    cp .env.example .env
+    npm run dev
+    ```
+
+    It listens on `http://localhost:4000`.
+
+    <Tip>
+      With no `DATABASE_URL` the backend runs entirely in memory and seeds demo accounts. That is
+      the fastest way to see the whole consent flow without provisioning anything.
+    </Tip>
+  </Step>
+
+  <Step title="Start the web frontend">
+    ```bash
+    cd medrekk-web
+    npm install
+    npm run dev
+    ```
+
+    `http://localhost:3000`. Set `NEXT_PUBLIC_API_URL=http://localhost:4000` in `.env.local`.
+  </Step>
+
+  <Step title="Start the app">
+    ```bash
+    cd medrekk
+    npm install
+    npx expo start
+    ```
+
+    <Warning>
+      An Android emulator reaches a server on your machine at **`10.0.2.2`**, not `localhost`. A
+      physical phone needs your machine's LAN address. This is the single most common reason the
+      app appears to have no backend.
+    </Warning>
+  </Step>
+
+  <Step title="Walk the consent flow">
+    Register a patient account and a health worker account. From the worker, look the patient up
+    by their MedRekk code and request access. The request arrives on the patient's Access tab,
+    where it can be approved, narrowed to fewer areas, or declined — and then appears in the
+    patient's history either way.
+  </Step>
+</Steps>
+
+## Running the tests
+
+```bash
+cd medrekk-backend && npm test
+```
+
+24 suites, around 16 seconds, no database required — see [Testing](/reference/testing) for why
+that is possible.

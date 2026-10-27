@@ -1,0 +1,48 @@
+---
+title: "MedRekk"
+description: "An offline-first, patient-owned medical record."
+---
+
+A patient's medical history normally belongs to whichever hospital wrote it down. Walk into a
+different clinic and it starts again — and when the network is down, none of it is reachable at
+all.
+
+MedRekk puts the record on the patient's own phone. It works with no connection, a health worker
+sees only what the patient approves and only for as long as they allow, and every look is written
+into a log the patient alone can read.
+
+<CardGroup cols={2}>
+  <Card title="Nothing shared by default" icon="lock">
+    A clinician holding a patient's code can request access and nothing more. The patient sees who
+    is asking, where they work and why — and may approve fewer areas than were requested.
+  </Card>
+  <Card title="Access ends by itself" icon="clock">
+    Every grant carries an expiry. Nobody has to remember to revoke it, which is the step that
+    never happens in practice.
+  </Card>
+  <Card title="Every read recorded" icon="eye">
+    Views, emergency scans and USSD dial-ins all land in a trail only the patient can open.
+  </Card>
+  <Card title="Works without a smartphone" icon="phone">
+    Any record can be read by dialling a USSD code and entering a PIN. The emergency card is
+    readable from a QR with no approval at all.
+  </Card>
+</CardGroup>
+
+## Where things live
+
+| Repository | What it is | Deployed to |
+| --- | --- | --- |
+| [`medrekk`](https://github.com/Robinson-Taiwo/medrekk) | The mobile app, for patients and health workers | EAS Build (Android APK) |
+| [`medrekk-backend`](https://github.com/Robinson-Taiwo/medrekk-backend) | API, consent engine, audit trail | Rumpty Cloud |
+| [`medrekk-web`](https://github.com/Robinson-Taiwo/medrekk-web) | Site, clinician reader, emergency lookup, USSD simulator, admin | Rumpty Cloud |
+
+<Info>
+They are deliberately separate rather than a monorepo. A 25-minute native build and a Next.js
+deploy share no pipeline, and coupling them would mean every web change invalidating a mobile
+build cache.
+</Info>
+
+<Card title="Run it locally" icon="terminal" href="/quickstart">
+  Backend, web and app, in about five minutes.
+</Card>

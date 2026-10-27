@@ -1,0 +1,68 @@
+---
+title: "API surface"
+description: "What the backend exposes, grouped by who calls it."
+---
+
+All routes are JSON. Authenticated routes take `Authorization: Bearer <token>`.
+
+## Auth
+
+| | |
+| --- | --- |
+| `POST /auth/register` | Patient or health worker. Returns a token |
+| `POST /auth/login` | |
+| `GET /auth/me` | The signed-in account |
+| `POST /auth/me/push-token` · `DELETE` | Register and hand back this handset's push token |
+
+## A patient's own record
+
+| | |
+| --- | --- |
+| `GET /patients/me` | Name and MedRekk code |
+| `GET /patients/me/claims` | Every entry |
+| `POST /patients/me/entries` | File a document, with whatever was extracted from it |
+| `GET /patients/me/entries` | Documents, newest first, each with its full text |
+| `DELETE /patients/me/entries/:id` | Remove a document and everything it produced |
+| `DELETE /patients/me/claims/:id` | Remove one entry |
+| `GET /patients/me/audit` | The trail. Paged, filterable by group and date |
+| `GET /patients/me/emergency-profile` | |
+| `GET` · `PATCH /patients/me/profile` | |
+
+## Consent
+
+| | |
+| --- | --- |
+| `POST /access/lookup` | A worker finds a patient by code. Returns a session token |
+| `POST /access/:session/request` | Ask for scopes, with a reason and a duration |
+| `GET /patients/me/access-requests` | What is waiting on the patient |
+| `POST /patients/me/access-requests/:id/decide` | Approve, narrow, or deny |
+| `GET /patients/me/access-sessions?status=active` | Live grants |
+| `POST /patients/me/access-sessions/:id/revoke` | End one early |
+| `GET /access/mine` | A worker's live grants, across devices |
+| `POST /access/:session/release` | Hand a grant back |
+| `GET /access/:session/record` | The approved record, scoped |
+
+## Capture
+
+| | |
+| --- | --- |
+| `POST /access/:session/encounters` | Start a visit |
+| `POST /access/:session/encounters/:id/draft` | Save extracted items |
+| `POST /access/:session/encounters/:id/review` | Commit to the record |
+| `POST /access/:session/encounters/:id/discard` | |
+
+## Everyone else
+
+| | |
+| --- | --- |
+| `GET /emergency/:identifier` | The emergency card. No auth. Logged |
+| `POST /ussd` | The dial-in state machine |
+| `GET /referrals/:shareId` | A shared referral |
+| `POST /sync/push` | Idempotent by `operationId` |
+| `GET /admin/health-workers` | Gated on `ADMIN_EMAILS` |
+| `GET /health` | |
+
+<Info>
+Every read of a record — approved, emergency or dial-in — appends to the patient's audit trail
+before the response is returned.
+</Info>

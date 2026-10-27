@@ -1,0 +1,50 @@
+---
+title: "Environment variables"
+description: "Every variable, in one place."
+---
+
+## medrekk-backend
+
+| Variable | Default | Notes |
+| --- | --- | --- |
+| `PORT` | `4000` | |
+| `AUTH_MODE` | `jwt` | `dev` trusts headers with no token. Refused in production and whenever `DATABASE_URL` is set |
+| `DATABASE_URL` | — | Postgres. Unset means in-memory |
+| `DATA_ENCRYPTION_KEY` | — | Required with Postgres |
+| `CORS_ORIGIN` | `http://localhost:3000` | Must include the deployed web origin |
+| `EXPO_PUSH_ENABLED` | `false` | `true` sends through Expo's push service |
+| `ADMIN_EMAILS` | — | Comma-separated. Gates credential approval |
+| `SEED_DEMO_DATA` | `true` | Ignored when `DATABASE_URL` is set |
+
+<Warning>
+**`DATA_ENCRYPTION_KEY` cannot be recovered.** Without it the stored record is unreadable. Back it
+up before the first production write.
+</Warning>
+
+<Warning>
+**`CORS_ORIGIN` is the one most likely to bite.** Miss the deployed web origin and the emergency
+lookup and record reader fail in the browser with nothing in the server logs to show for it.
+</Warning>
+
+## medrekk-web
+
+| Variable | Notes |
+| --- | --- |
+| `NEXT_PUBLIC_API_URL` | The backend |
+| `NEXT_PUBLIC_SITE_URL` | Where this deployment lives. Without it, link previews fall back to a bare URL |
+| `NEXT_PUBLIC_APK_URL` | The EAS install link. Absent, the download card says "not published yet" |
+| `NEXT_PUBLIC_APK_VERSION` | Optional, e.g. `v1.0.0` |
+| `NEXT_PUBLIC_USSD_CODE` | Shown in the dial-in simulator |
+
+## medrekk
+
+| Variable | Notes |
+| --- | --- |
+| `EXPO_PUBLIC_API_URL` | The backend |
+| `EXPO_PUBLIC_WEB_URL` | Where the emergency QR points |
+
+<Warning>
+For **builds** these come from the profile's `env` in `eas.json`, not from `.env`. A `.env`
+pointing at a LAN address is fine locally and produces a QR nobody else can open — it resolves on
+your wifi and nowhere else.
+</Warning>

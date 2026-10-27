@@ -1,0 +1,64 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "MedRekk",
+  "description": "An offline-first, patient-owned medical record.",
+  "colors": {
+    "primary": "#0F6E56",
+    "light": "#2FBE8F",
+    "dark": "#0B1A17"
+  },
+  "favicon": "/favicon.svg",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Getting started",
+            "pages": ["index", "quickstart"]
+          },
+          {
+            "group": "How it works",
+            "pages": [
+              "architecture/overview",
+              "architecture/consent",
+              "architecture/offline",
+              "architecture/structure"
+            ]
+          },
+          {
+            "group": "The repositories",
+            "pages": [
+              "repositories/backend",
+              "repositories/mobile",
+              "repositories/web"
+            ]
+          },
+          {
+            "group": "Deploying",
+            "pages": ["deploy/environment", "deploy/rumpty-cloud", "deploy/eas-build"]
+          },
+          {
+            "group": "Reference",
+            "pages": ["reference/api", "reference/testing", "reference/decisions"]
+          }
+        ]
+      }
+    ]
+  },
+  "navbar": {
+    "links": [
+      { "label": "Live site", "href": "https://medrekk-web.rumptycloud.app" }
+    ],
+    "primary": {
+      "type": "github",
+      "href": "https://github.com/Robinson-Taiwo/medrekk"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/Robinson-Taiwo"
+    }
+  }
+}

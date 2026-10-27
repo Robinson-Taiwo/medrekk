@@ -1,0 +1,38 @@
+---
+title: "medrekk-web"
+description: "Next.js 16. The site, the reader, and everyone without the app."
+---
+
+<Card title="github.com/Robinson-Taiwo/medrekk-web" icon="github" href="https://github.com/Robinson-Taiwo/medrekk-web" />
+
+```bash
+npm install
+npm run dev        # http://localhost:3000
+npm run build
+```
+
+## Routes
+
+| Route | For |
+| --- | --- |
+| `/` | What MedRekk is |
+| `/download` | Install the Android app |
+| `/access` | A clinician entering a code to request access |
+| `/access/[session]/record` | The approved record, scope by scope |
+| `/emergency` · `/emergency/[identifier]` | Emergency card lookup — no account |
+| `/ussd` | A working simulator of the dial-in flow |
+| `/referral/[shareId]` | A referral someone was sent |
+| `/admin` | Health-worker credential approval |
+| `/how-it-works` · `/for-providers` · `/privacy` | |
+
+## Notes
+
+The clinician's record view is a **grid of scope cards**, not one long column: six areas fit on
+roughly one screen, and allergies are found by position rather than by scrolling.
+
+An empty scope still renders as a card saying nothing is recorded. An absent allergy list and an
+unshared allergy list are clinically different things.
+
+The download link is `NEXT_PUBLIC_APK_URL` rather than a constant, because EAS gives every build
+its own URL and there is no permanent "latest" address to hardcode. Publishing a new build is
+pasting a link into the host and redeploying.
